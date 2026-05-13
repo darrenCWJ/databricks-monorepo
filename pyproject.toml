@@ -1,0 +1,61 @@
+[project]
+name = "cdo-platform"
+version = "0.0.0"
+description = "CDO data platform monorepo (workspace root)"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pre-commit>=3.8",
+    "databricks-cli>=0.18",
+    "nbstripout>=0.7",
+    "pip-audit>=2.7",
+]
+
+[tool.uv.workspace]
+members = [
+    "tools/scripts",
+]
+
+[tool.uv.sources]
+
+# IM8 Tier 1: internal package index is the default source.
+# Public PyPI access is denied at the network layer for Restricted workloads.
+[[tool.uv.index]]
+name = "cdo-internal"
+url = "https://artifactory.cdo.gov.sg/api/pypi/pypi-prod/simple"
+default = true
+
+[tool.uv]
+index-strategy = "first-index"
+prerelease = "disallow"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "SIM", "S"]   # S = bandit security rules
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+explicit_package_bases = true
+[[tool.mypy.overrides]]
+module = ["pyspark.*", "databricks.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["apps", "libs"]
+markers = [
+    "unit: fast, no external deps",
+    "integration: requires a live Spark or Databricks connection",
+    "compliance: validates a compliance control",
+]
