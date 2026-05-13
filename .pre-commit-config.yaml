@@ -1,0 +1,60 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: detect-private-key
+      - id: check-merge-conflict
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.7.1
+    hooks:
+      - id: nbstripout
+
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 3.2.5
+    hooks:
+      - id: sqlfluff-lint
+        files: "^dbt/"
+        args: [--dialect=databricks]
+
+  - repo: local
+    hooks:
+      - id: block-cross-app-imports
+        name: Block imports across apps/ boundaries
+        entry: uv run python tools/scripts/check_boundaries.py
+        language: system
+        files: "^apps/.*\\.py$"
+        pass_filenames: true
+
+      - id: agentsmd-lint
+        name: Lint AGENTS.md files
+        entry: uv run python tools/scripts/lint_agents_md.py
+        language: system
+        files: "AGENTS\\.md$"
+        pass_filenames: true
+
+      - id: ownership-sync-check
+        name: Check CODEOWNERS sync with referenced files
+        entry: uv run python tools/scripts/check_ownership_sync.py
+        language: system
+        files: "(CODEOWNERS|AGENTS\\.md|CLAUDE\\.md|databricks\\.yml|.*\\.tf|docs/(compliance|onboarding|runbooks)/.*\\.md)$"
+        pass_filenames: false
+
+      - id: pii-contract-check
+        name: Require pii tag on dbt and bundle schemas
+        entry: uv run python tools/scripts/check_pii_contract.py
+        language: system
+        files: "(schema\\.yml|contracts/.*\\.yml)$"
+        pass_filenames: true

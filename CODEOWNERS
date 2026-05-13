@@ -1,0 +1,63 @@
+# cdo-platform CODEOWNERS — GitLab syntax
+# Maintained by @cdo/platform-team.
+# Edit team-specific lines via the owning team's MR.
+# Edit platform-wide rules via @cdo/platform-team MR.
+# Later lines override earlier ones.
+
+# ---- Default ----
+*                                       @cdo/platform-team
+
+# ---- Apps (by team prefix) ----
+/apps/finance-*/                        @cdo/finance-team
+/apps/supplier-*/                       @cdo/supplier-team
+/apps/infra-*/                          @cdo/infra-team
+/apps/customer*/                       @cdo/customer-data
+/apps/fraud-*/                          @cdo/fraud-eng
+/apps/pdpa-*/                           @cdo/data-governance @cdo/platform-team
+
+# ---- Libraries ----
+# Team-private libs — owned by the team that uses them
+/libs/finance-common/                   @cdo/finance-team
+/libs/supplier-common/                  @cdo/supplier-team
+/libs/infra-common/                     @cdo/infra-team
+
+# Platform-wide libs — changes here ripple to every team
+/libs/common-*/                         @cdo/platform-team
+/libs/testing-utils/                    @cdo/platform-team
+
+# ---- dbt mesh ----
+/dbt/platform-core/                     @cdo/analytics-eng-platform
+/dbt/finance/                           @cdo/finance-team
+/dbt/supplier/                          @cdo/supplier-team
+/dbt/infra/                             @cdo/infra-team
+
+# Any schema.yml that classifies Restricted columns — regardless of which team owns it
+/dbt/**/schema.yml                      @cdo/data-governance @cdo/restricted-cleared
+
+# ---- Infra (platform team only) ----
+/infra/                                 @cdo/platform-team
+/infra/unity-catalog/                   @cdo/platform-team @cdo/data-governance @cdo/security
+
+# ---- Tools (platform team only) ----
+/tools/                                 @cdo/platform-team
+
+# ---- Documentation ----
+/docs/                                  @cdo/platform-team
+/docs/compliance/                       @cdo/data-governance @cdo/security
+/docs/onboarding/                       @cdo/platform-team
+/docs/data-architecture.md            @cdo/platform-team
+/docs/runbooks/lakebase-sync-design.md  @cdo/platform-team
+/infra/lakebase/                        @cdo/platform-team @cdo/data-governance @cdo/security
+/docs/runbooks/finance-*.md             @cdo/finance-team
+/docs/runbooks/supplier-*.md            @cdo/supplier-team
+/docs/runbooks/infra-*.md               @cdo/infra-team
+
+# ---- Critical platform config ----
+/CODEOWNERS                             @cdo/platform-team
+/.gitlab-ci.yml                         @cdo/platform-team @cdo/security
+/.pre-commit-config.yaml                @cdo/platform-team
+/databricks.yml                         @cdo/platform-team
+/pyproject.toml                         @cdo/platform-team
+/justfile                               @cdo/platform-team
+/AGENTS.md                              @cdo/platform-team
+/CLAUDE.md                              @cdo/platform-team

@@ -1,93 +1,336 @@
 # mono-dev
 
+The data platform monorepo. All pipelines, shared libraries, infrastructure,
+and tooling live here as independently deployable units.
 
-
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+## Repository structure
 
 ```
-cd existing_repo
-git remote add origin https://sgts.gitlab-dedicated.com/wog/gvt/dart/gvt-dsaid-dart/mono-dev.git
-git branch -M main
-git push -uf origin main
+mono-dev/
+├── apps/                  # Databricks Asset Bundles — one per pipeline/job
+├── libs/                  # Shared Python libraries used by 2+ apps
+├── infra/                 # Terraform + Unity Catalog IaC
+├── tools/                 # Cross-cutting scripts (scaffold, CI, compliance)
+├── docs/                  # ADRs, runbooks, compliance, onboarding guides
+├── databricks.yml         # Root DAB config (dev/staging/prod targets)
+├── pyproject.toml         # Python workspace root (uv)
+├── justfile               # Command surface for all operations
+├── .gitlab-ci.yml         # CI/CD pipeline (affected-only)
+├── CODEOWNERS             # Per-team ownership and review routing
+├── AGENTS.md              # AI agent instructions (Claude, Cursor, Copilot, Genie)
+└── CLAUDE.md              # Claude Code entrypoint (imports AGENTS.md)
 ```
 
-## Integrate with your tools
+---
 
-* [Set up project integrations](https://sgts.gitlab-dedicated.com/wog/gvt/dart/gvt-dsaid-dart/mono-dev/-/settings/integrations)
+## Quick start
 
-## Collaborate with your team
+### Prerequisites
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+| Tool | Version | Install |
+|------|---------|---------|
+| Python | 3.11+ | System or pyenv |
+| uv | latest | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| just | latest | `brew install just` or [github.com/casey/just](https://github.com/casey/just) |
+| Databricks CLI | 0.18+ | `pip install databricks-cli` or [setup-cli](https://github.com/databricks/setup-cli) |
+| Git | 2.30+ | System |
+| pre-commit | 3.8+ | Installed via `just setup` |
 
-## Test and Deploy
+### First-time setup
 
-Use the built-in continuous integration in GitLab.
+```bash
+git clone git@sgts.gitlab-dedicated.com:wog/gvt/dart/gvt-dsaid-dart/mono-dev.git
+cd mono-dev
+just setup
+```
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+This installs all Python dependencies, sets up pre-commit hooks, and
+configures the uv workspace.
 
-***
+### Verify everything works
 
-# Editing this README
+```bash
+just lint .          # Check code quality
+just test .          # Run all tests
+just affected        # See what's changed vs main
+```
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+---
 
-## Suggestions for a good README
+## For data engineers
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+You build and maintain batch/streaming pipelines that run on Databricks.
 
-## Name
-Choose a self-explaining name for your project.
+### Your workflow
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+1. **Create a new pipeline:**
+   ```bash
+   just new-app <team>-<verb>-<noun> --kind python
+   # Example: just new-app finance-payment-recon --kind python
+   ```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+2. **Write your logic** in `apps/<name>/src/<package>/` (not in notebooks).
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+3. **Write tests first:**
+   ```bash
+   just test apps/<name>
+   ```
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+4. **Validate the bundle:**
+   ```bash
+   just bundle-validate apps/<name>
+   ```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+5. **Deploy to dev:**
+   ```bash
+   just bundle-deploy apps/<name> -t dev
+   ```
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+6. **Open a merge request** targeting `main`.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+### Key conventions
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+- Business logic lives in `src/`, not notebooks. Notebooks are thin shims
+  that call functions from `src/`.
+- Each app is a Databricks Asset Bundle (DAB) with its own `bundle.yml`.
+- Use `${var.catalog}` for environment-specific catalogs — never hardcode.
+- Reference secrets via `${secrets.scope.key}` in `bundle.yml`.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+### Relevant docs
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+- `docs/runbooks/create-a-new-project.md` — full project creation checklist
+- `docs/runbooks/import-existing-job.md` — bring an existing Databricks Job into the repo
+- `docs/runbooks/migrate-a-script.md` — convert a legacy script into a DAB
+- `apps/AGENTS.md` — structure and rules for apps
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+---
 
-## License
-For open source projects, say how it is licensed.
+## For data scientists
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+You build ML training pipelines, experiments, and model serving.
+
+### Your workflow
+
+1. **Prototype** in a Databricks notebook (Git Folder or local).
+
+2. **When ready to productionise**, extract logic into a proper app:
+   ```bash
+   just new-app <team>-train-<model> --kind python
+   ```
+
+3. **Structure your code:**
+   ```
+   apps/<name>/
+   ├── src/<package>/
+   │   ├── features.py      # Feature engineering
+   │   ├── train.py         # Training logic
+   │   └── evaluate.py      # Model evaluation
+   ├── notebooks/
+   │   └── run_training.py  # Thin shim calling src/
+   └── tests/
+       └── test_features.py # Unit tests for transforms
+   ```
+
+4. **Track experiments** using MLflow (built into Databricks).
+
+5. **Test locally**, then open an MR:
+   ```bash
+   just test apps/<name>
+   just lint apps/<name>
+   ```
+
+### Key conventions
+
+- All feature engineering and transforms must be unit-testable (in `src/`).
+- Notebooks should only contain widget wiring + a function call.
+- Log parameters, metrics, and artifacts to MLflow.
+- Data reads should use `${var.catalog}` for environment isolation.
+
+### Working from Databricks directly
+
+If you can't install local tools, you can work entirely from a Databricks
+Git Folder. See `docs/runbooks/databricks-git-folder-workflow.md`.
+
+---
+
+## For platform engineers
+
+You maintain the shared infrastructure, CI/CD, and developer tooling.
+
+### Your responsibilities
+
+| Area | Location |
+|------|----------|
+| Unity Catalog grants, masks, row filters | `infra/unity-catalog/` |
+| Workspace provisioning | `infra/terraform-databricks/` |
+| CI/CD pipeline | `.gitlab-ci.yml` |
+| Scaffolding tools | `tools/scripts/` |
+| Pre-commit hooks | `.pre-commit-config.yaml` |
+| Team ownership routing | `CODEOWNERS` |
+| Compliance controls | `docs/compliance/` |
+
+### Common tasks
+
+**Add a new team to the monorepo:**
+1. Add CODEOWNERS wildcard: `/apps/<team>-*/  @cdo/<team>`
+2. Document in `docs/data-architecture.md`
+
+**Update CI pipeline:**
+- Edit `.gitlab-ci.yml` (requires `@cdo/platform-team` + `@cdo/security` review)
+
+**Modify access grants:**
+- Edit `infra/unity-catalog/main.tf`
+- See `docs/runbooks/access-control.md` for the four-layer model
+
+**Run quarterly audit:**
+```bash
+just dump-access prod
+```
+
+### Relevant docs
+
+- `docs/runbooks/access-control.md` — four-layer access model
+- `docs/runbooks/bootstrap-ci-and-audit.md` — CI setup
+- `docs/runbooks/codeowners-maintenance.md` — managing CODEOWNERS
+- `docs/compliance/` — IM8, PDPA, SOC2 controls
+
+---
+
+## For AI agent operators
+
+You configure and manage AI coding agents (Claude Code, Cursor, Copilot,
+Databricks Code Assistant / Genie Code) that work in this repo.
+
+### How agents discover context
+
+```
+AGENTS.md (root)           <- Every agent reads this first
+├── apps/AGENTS.md         <- Domain guide for apps
+├── apps/<name>/AGENTS.md  <- Per-project context (when projects exist)
+├── libs/AGENTS.md         <- Domain guide for libraries
+├── infra/AGENTS.md        <- Infrastructure rules
+└── tools/AGENTS.md        <- Available scripts
+```
+
+- **Claude Code**: reads `CLAUDE.md` which imports `AGENTS.md`.
+- **Cursor/Copilot**: reads `AGENTS.md` directly from repo root.
+- **Databricks Code Assistant / Genie Code**: reads from Git Folder;
+  may need explicit prompt to load `AGENTS.md`.
+
+### Governance
+
+All agents follow the same rules as human engineers:
+- CI gates apply equally (lint, test, bundle-validate, security scan).
+- CODEOWNERS routes review regardless of who/what authored the change.
+- No "agent-approved" fast path exists. Same MR process.
+
+### Validation prompts (test agent grounding)
+
+After configuring a new agent, run these prompts to verify it has context:
+
+1. "Read AGENTS.md. Tell me three rules you'll follow."
+2. "Run `just affected` and tell me what would deploy."
+3. "Scaffold a new Python app called `test-validation`. Show me the generated files."
+
+### Relevant docs
+
+- `docs/runbooks/databricks-code-assistant.md` — Genie Code setup
+- `docs/runbooks/databricks-git-folder-workflow.md` — Git Folder push flow
+
+---
+
+## For team leads and reviewers
+
+You review merge requests and manage team boundaries.
+
+### How review routing works
+
+`CODEOWNERS` defines who reviews what. Patterns are team-prefix based:
+
+```
+/apps/finance-*/    @cdo/finance-team
+/apps/fraud-*/      @cdo/fraud-eng
+/libs/common-*/     @cdo/platform-team
+```
+
+### Review checklist
+
+Before approving:
+- [ ] CI is green (lint + tests + bundle-validate + security)
+- [ ] No cross-team boundary violations
+- [ ] Business logic is in `src/`, not notebooks
+- [ ] Tests exist for new functionality
+- [ ] `AGENTS.md` updated if a new app/lib was created
+- [ ] No hardcoded secrets or credentials
+- [ ] Restricted/PII columns have appropriate masks declared
+
+### Relevant docs
+
+- `docs/runbooks/branching-strategy.md` — branch model and release flow
+- `docs/runbooks/release-process.md` — promoting to staging/prod
+- `docs/runbooks/quarterly-access-review.md` — periodic access audit
+
+---
+
+## Environments
+
+| Environment | Catalog | Trigger | Purpose |
+|-------------|---------|---------|---------|
+| **dev** | `cdo_dev` | Auto on merge to `main` | Sandbox, fast iteration |
+| **staging** | `cdo_staging` | Manual on `release/*` branch | Pre-prod validation |
+| **prod** | `cdo_prod` | Manual on `release/*` branch (separate approver) | Production |
+
+See `databricks.yml` for full target configuration.
+
+---
+
+## Branch model
+
+| Branch | Purpose | Lifetime |
+|--------|---------|----------|
+| `main` | Trunk. Always green. Auto-deploys to dev. | Permanent |
+| `feature/<team>-<desc>` | Your day-to-day work | Days to weeks |
+| `release/YYYY-MM-DD` | Promoted through staging and prod | 6-12 months (audit) |
+| `hotfix/<ticket>` | Emergency fix on a live release | Hours |
+
+Full details: `docs/runbooks/branching-strategy.md`
+
+---
+
+## Command reference
+
+| Command | Description |
+|---------|-------------|
+| `just setup` | Bootstrap: install deps + pre-commit hooks |
+| `just test PATH` | Run pytest scoped to PATH |
+| `just test-cov PATH` | Run tests with coverage report |
+| `just lint PATH` | Lint (ruff + mypy) |
+| `just fix PATH` | Auto-fix lint issues |
+| `just bundle-validate PATH` | Validate a DAB |
+| `just bundle-deploy PATH TARGET` | Deploy a DAB (default: dev) |
+| `just bundle-run PATH JOB TARGET` | Trigger a job run |
+| `just bundle-destroy PATH TARGET` | Tear down a DAB |
+| `just new-app NAME --kind KIND` | Scaffold new app (python/scala) |
+| `just new-lib NAME` | Scaffold new shared library |
+| `just import-job JOB_ID TARGET` | Import existing Databricks Job |
+| `just affected` | List what changed vs main |
+| `just where-is MODEL` | Locate a model and its consumers |
+| `just dump-access TARGET` | Export access grants for audit |
+| `just ci-local` | Run full CI locally |
+
+---
+
+## Further reading
+
+| Topic | Location |
+|-------|----------|
+| Creating a new project | `docs/runbooks/create-a-new-project.md` |
+| Branching and releases | `docs/runbooks/branching-strategy.md` |
+| Access control (4 layers) | `docs/runbooks/access-control.md` |
+| Working from Databricks | `docs/runbooks/databricks-git-folder-workflow.md` |
+| AI agent guidance | `docs/runbooks/databricks-code-assistant.md` |
+| Importing legacy jobs | `docs/runbooks/import-existing-job.md` |
+| Migrating scripts | `docs/runbooks/migrate-a-script.md` |
+| Compliance (IM8/PDPA/SOC2) | `docs/compliance/` |
+| Architecture decisions | `docs/adr/` |
+| Glossary | `docs/glossary.md` |

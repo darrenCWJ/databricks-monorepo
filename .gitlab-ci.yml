@@ -1,31 +1,164 @@
-# You can override the included template(s) by including variable overrides
-# SAST customization: https://docs.gitlab.com/user/application_security/sast/#available-cicd-variables
-# Secret Detection customization: https://docs.gitlab.com/user/application_security/secret_detection/pipeline/configure/
-# Dependency Scanning customization: https://docs.gitlab.com/user/application_security/dependency_scanning/#customizing-analyzer-behavior
-# Container Scanning customization: https://docs.gitlab.com/user/application_security/container_scanning/#customizing-analyzer-behavior
-# Note that environment variables can be set in several places
-# See https://docs.gitlab.com/ci/variables/#cicd-variable-precedence
+# CDO platform — GitLab CI/CD.
+# IM8 Tier 1 baseline. Branch model: release branches off main.
+
 stages:
-- build
-- test
-- deploy
-- review
-- dast
-- staging
-- canary
-- production
-- incremental rollout 10%
-- incremental rollout 25%
-- incremental rollout 50%
-- incremental rollout 100%
-- performance
-- cleanup
-- secret-detection
-sast:
-  stage: test
-include:
-- template: Auto-DevOps.gitlab-ci.yml
+  - validate
+  - test
+  - security
+  - bundle
+  - deploy
+
 variables:
-  SECRET_DETECTION_ENABLED: 'true'
-secret_detection:
-  stage: secret-detection
+  PYTHON_VERSION: "3.11"
+  UV_CACHE_DIR: ".uv-cache"
+  # IM8 Tier 1: internal Artifactory mandatory.
+  # Set UV_INDEX_URL in protected CI variables, NOT in this file.
+
+default:
+  image: python:3.11-slim
+  cache:
+    key:
+      files:
+        - uv.lock
+    paths:
+      - .uv-cache/
+      - .venv/
+
+.setup-uv: &setup-uv
+  - pip install --quiet uv
+  - uv sync --all-packages
+
+# ============ validate ============
+lint:
+  stage: validate
+  script:
+    - *setup-uv
+    - uv run ruff check .
+    - uv run ruff format --check .
+
+compute-affected:
+  stage: validate
+  script:
+    - *setup-uv
+    - |
+      git fetch origin main --depth=50
+      uv run python tools/scripts/affected.py "origin/main" > affected.json
+      cat affected.json
+  artifacts:
+    paths: [affected.json]
+    expire_in: 1 day
+
+# ============ test ============
+test-python:
+  stage: test
+  needs: [compute-affected]
+  script:
+    - *setup-uv
+    - |
+      APPS=$(jq -r '.apps[]' affected.json)
+      LIBS=$(jq -r '.libs[]' affected.json)
+      for p in $APPS; do uv run pytest "apps/$p" -x; done
+      for p in $LIBS; do uv run pytest "libs/$p" -x; done
+
+# ============ security (IM8 Tier 1) ============
+pip-audit:
+  stage: security
+  script:
+    - *setup-uv
+    - uv run pip-audit --strict
+  # Fail on any vulnerability; review before exempting.
+  allow_failure: false
+
+ruff-security:
+  stage: security
+  script:
+    - *setup-uv
+    - uv run ruff check --select S .   # bandit rules
+
+trivy-fs:
+  stage: security
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+
+# ============ bundle validate ============
+bundle-validate:
+  stage: bundle
+  needs: [compute-affected]
+  script:
+    - *setup-uv
+    - apt-get update && apt-get install -y curl
+    - curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+    - |
+      APPS=$(jq -r '.apps[]' affected.json)
+      for a in $APPS; do
+        if [ -f "apps/$a/bundle.yml" ]; then
+          (cd "apps/$a" && databricks bundle validate)
+        fi
+      done
+
+# ============ deploy: dev (auto on main) ============
+deploy-dev:
+  stage: deploy
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  environment: { name: dev, deployment_tier: development }
+  script:
+    - *setup-uv
+    - apt-get update && apt-get install -y curl
+    - curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+    - |
+      APPS=$(jq -r '.apps[]' affected.json)
+      for a in $APPS; do
+        (cd "apps/$a" && databricks bundle deploy -t dev)
+        uv run python tools/scripts/audit_log.py --bundle "$a" --target dev --sha "$CI_COMMIT_SHA"
+      done
+
+# ============ deploy: staging (manual on release/*) ============
+deploy-staging:
+  stage: deploy
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+  environment: { name: staging, deployment_tier: staging }
+  script:
+    - *setup-uv
+    - apt-get update && apt-get install -y curl
+    - curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+    - |
+      for a in apps/*/bundle.yml; do
+        d=$(dirname "$a")
+        (cd "$d" && databricks bundle deploy -t staging)
+        uv run python tools/scripts/audit_log.py --bundle "$(basename $d)" --target staging --sha "$CI_COMMIT_SHA"
+      done
+
+# ============ deploy: prod (manual on release/*; protected env) ============
+deploy-prod:
+  stage: deploy
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+  environment: { name: prod, deployment_tier: production }
+  script:
+    - *setup-uv
+    - apt-get update && apt-get install -y curl
+    - curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+    - |
+      for a in apps/*/bundle.yml; do
+        d=$(dirname "$a")
+        (cd "$d" && databricks bundle deploy -t prod)
+        uv run python tools/scripts/audit_log.py --bundle "$(basename $d)" --target prod --sha "$CI_COMMIT_SHA"
+      done
+
+# ============ nightly full-suite regression ============
+nightly:
+  stage: test
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  script:
+    - *setup-uv
+    - uv run ruff check .
+    - uv run pip-audit
+    - uv run pytest apps libs -x
