@@ -29,6 +29,10 @@ target-version = "py311"
 select = ["E", "F", "I", "S", "B", "UP"]
 ignore = ["S101"]  # asserts ok in tests
 
+[tool.pytest.ini_options]
+testpaths = ["apps", "libs"]
+addopts = "--strict-markers"
+
 [tool.mypy]
 python_version = "3.11"
 strict = true

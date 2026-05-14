@@ -3,4 +3,6 @@ test-python:
   image: ghcr.io/astral-sh/uv:python3.11-bookworm
   script:
     - uv sync
-    - uv run pytest --cov=apps --cov=libs --cov-report=term-missing
+    - uv run pytest --cov=apps --cov=libs --cov-report=term-missing || EXIT=$?;
+      if [ "${EXIT:-0}" -eq 5 ]; then echo "No tests collected — OK for scaffold."; exit 0; fi;
+      exit "${EXIT:-0}"
