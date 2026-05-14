@@ -1,0 +1,7 @@
+security:
+  stage: security
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
+  script:
+    - uv sync
+    - uv run pip-audit
+    - uv run ruff check --select S  # bandit-equivalent

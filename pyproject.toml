@@ -1,0 +1,26 @@
+# uv workspace root.
+# Each Python app and library under apps/ or libs/ is a workspace member.
+
+[project]
+name = "cdo-platform"
+version = "0.1.0"
+requires-python = ">=3.11"
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+# add each Python app + lib here when you create one:
+members = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "S", "B", "UP"]
+ignore = ["S101"]  # asserts ok in tests
+
+[tool.mypy]
+python_version = "3.11"
+strict = true

@@ -1,0 +1,43 @@
+# Databricks Asset Bundle — repo root.
+# Each app under apps/<name>/bundle.yml is `include`d below.
+
+bundle:
+  name: cdo-platform
+
+include:
+  # add every app's bundle file as you create it:
+  # - apps/finance-payment-recon/bundle.yml
+
+variables:
+  cluster_node_type_id:
+    description: Default cluster node type (Singapore region).
+    default: i3.xlarge
+  staging_sp:
+    description: Service principal that runs jobs in staging/prod.
+    default: cdo-platform-staging-sp
+
+targets:
+
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://<dev-workspace>.cloud.databricks.com
+    run_as:
+      user_name: ${workspace.current_user.userName}
+
+  staging:
+    mode: production
+    workspace:
+      host: https://<shared-workspace>.cloud.databricks.com
+      root_path: /Workspace/cdo-platform/staging/${bundle.name}
+    run_as:
+      service_principal_name: ${var.staging_sp}
+
+  prod:
+    mode: production
+    workspace:
+      host: https://<shared-workspace>.cloud.databricks.com
+      root_path: /Workspace/cdo-platform/prod/${bundle.name}
+    run_as:
+      service_principal_name: ${var.staging_sp}

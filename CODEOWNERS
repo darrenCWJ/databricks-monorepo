@@ -1,0 +1,34 @@
+# CODEOWNERS — who approves what.
+# GitLab uses the LAST matching rule. Sections (^[Name]) require approval
+# from at least one of their owners. See `docs/runbooks/codeowners-maintenance.md`.
+
+# Default — platform team approves anything not claimed below.
+* @cdo/platform-team
+
+# Root config — platform team only.
+/AGENTS.md                  @cdo/platform-team
+/CODEOWNERS                 @cdo/platform-team
+/databricks.yml             @cdo/platform-team
+/pyproject.toml             @cdo/platform-team
+/.gitlab-ci.yml             @cdo/platform-team @cdo/security
+/.pre-commit-config.yaml    @cdo/platform-team @cdo/security
+/justfile                   @cdo/platform-team
+
+# Infra — platform team + security.
+/infra/                     @cdo/platform-team @cdo/security
+
+# Docs — platform team writes; data governance reviews compliance.
+/docs/                      @cdo/platform-team
+/docs/compliance/           @cdo/platform-team @cdo/data-governance
+
+# Tools — platform team.
+/tools/                     @cdo/platform-team
+
+# Per-team app rules — add lines like this when a team owns a folder prefix.
+# /apps/finance-*/          @cdo/finance-team
+# /apps/supplier-*/         @cdo/supplier-team
+# /libs/finance-*/          @cdo/finance-team
+
+# Cross-cutting reviewers — required when these areas are touched.
+^[Restricted-data-cleared]
+# add specific paths here that touch Restricted-classified columns

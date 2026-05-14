@@ -1,0 +1,5 @@
+bundle-validate:
+  stage: bundle-validate
+  image: databricks/cli:latest
+  script:
+    - databricks bundle validate

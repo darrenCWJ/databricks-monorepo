@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.uv-cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Databricks
+.databricks/
+metastore_db/
+derby.log
+
+# Local env
+.env
+.envrc
+.DS_Store

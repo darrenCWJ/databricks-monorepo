@@ -1,0 +1,34 @@
+# Pre-commit hooks. Fire on every commit, including pushes from the
+# Databricks UI Git folder workflow (via the `pre-receive` hook on the
+# GitLab side as well — see infra/gitlab/server-side-hooks/).
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: agents-md-lint
+        name: AGENTS.md present + under 200 lines
+        language: system
+        entry: python tools/scripts/lint_agents_md.py
+        pass_filenames: false
+      - id: boundary-check
+        name: no cross-team Python imports
+        language: system
+        entry: python tools/scripts/check_boundaries.py
+        files: '\.py$'

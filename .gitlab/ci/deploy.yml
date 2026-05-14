@@ -1,0 +1,28 @@
+deploy-dev:
+  stage: deploy-dev
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  image: databricks/cli:latest
+  script:
+    - databricks bundle deploy -t dev
+    - python tools/scripts/audit_log.py --env dev
+
+deploy-staging:
+  stage: deploy-staging
+  when: manual
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^release\//
+  image: databricks/cli:latest
+  script:
+    - databricks bundle deploy -t staging
+    - python tools/scripts/audit_log.py --env staging
+
+deploy-prod:
+  stage: deploy-prod
+  when: manual
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^release\//
+  image: databricks/cli:latest
+  script:
+    - databricks bundle deploy -t prod
+    - python tools/scripts/audit_log.py --env prod
