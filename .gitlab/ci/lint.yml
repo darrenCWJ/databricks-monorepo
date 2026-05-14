@@ -1,6 +1,6 @@
 lint:
   stage: lint
-  image: $CI_BASE_IMAGE
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   script:
     - uv sync
     - uv run ruff check
