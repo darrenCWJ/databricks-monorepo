@@ -22,7 +22,7 @@ targets:
     mode: development
     default: true
     workspace:
-      host: https://<dev-workspace>.cloud.databricks.com
+      host: https://gvt-databricks-uat.cloud.databricks.com
     run_as:
       user_name: ${workspace.current_user.userName}
 
