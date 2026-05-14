@@ -1,6 +1,5 @@
 bundle-validate:
   stage: bundle-validate
-  image: ghcr.io/astral-sh/uv:python3.11-bookworm
+  image: $CI_BASE_IMAGE
   script:
-    - uv tool install databricks-cli
     - databricks bundle validate
