@@ -29,7 +29,7 @@ targets:
   staging:
     mode: production
     workspace:
-      host: https://<shared-workspace>.cloud.databricks.com
+      host: https://gvt-databricks.cloud.databricks.com
       root_path: /Workspace/cdo-platform/staging/${bundle.name}
     run_as:
       service_principal_name: ${var.staging_sp}
@@ -37,7 +37,7 @@ targets:
   prod:
     mode: production
     workspace:
-      host: https://<shared-workspace>.cloud.databricks.com
+      host: https://gvt-databricks.cloud.databricks.com
       root_path: /Workspace/cdo-platform/prod/${bundle.name}
     run_as:
       service_principal_name: ${var.staging_sp}
