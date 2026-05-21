@@ -28,14 +28,14 @@ Databricks, with the same DAB + AGENTS.md discipline as a data engineer.
 - Write a unit test for it
 
 ## Day 4 — first MLflow run from the bundle
-- `just bundle-deploy apps/<that-app> -t dev`
-- Trigger the training job: `just bundle-run apps/<that-app> training -t dev`
+- `make bundle-deploy P=apps/<that-app> T=dev`
+- Trigger the training job: `make bundle-run P=apps/<that-app> JOB=training T=dev`
 - Verify the experiment appears in MLflow with your run logged
 
 ## Day 5 — register and serve
 - Register a model version from your training run
 - Update `resources/mlflow_serving/` to reference your version
-- `just bundle-deploy ... -t dev` → endpoint live
+- `make bundle-deploy P=... T=dev` → endpoint live
 - Smoke-test the endpoint with a single request
 
 ## Rules to internalise

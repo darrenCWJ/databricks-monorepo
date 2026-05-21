@@ -12,7 +12,7 @@ End-to-end time: 1–3 days for a medium job, including the 7-day shadow run.
 |---|---|
 | Existing Databricks Job already running in a workspace | **import-existing-job.md** (this) |
 | Legacy ETL script that doesn't yet run on Databricks | `docs/runbooks/migrate-a-script.md` |
-| Greenfield pipeline | `just new-app NAME --kind python` — no runbook needed |
+| Greenfield pipeline | `make new-app NAME=NAME KIND=python` — no runbook needed |
 
 ## Prerequisites
 
@@ -38,7 +38,7 @@ Capture this in a `docs/migrations/<job>-import-notes.md` file — it becomes au
 ## Step 2 — Scaffold the target app
 
 ```bash
-just new-app finance-payment-recon --kind python
+make new-app NAME=finance-payment-recon KIND=python
 ```
 
 Add it to the workspace and CODEOWNERS:
@@ -58,13 +58,13 @@ members = [
 ```
 
 ```bash
-just setup
+make setup
 ```
 
 ## Step 3 — Export the job from Databricks
 
 ```bash
-just import-job 987654321 apps/finance-payment-recon
+make import-job JOB_ID=987654321 T=apps/finance-payment-recon
 ```
 
 Under the hood this runs `tools/scripts/import_job.py`, which:
@@ -108,9 +108,9 @@ This is the single biggest improvement an import brings — it converts an untes
 ## Step 6 — Validate locally
 
 ```bash
-just lint apps/finance-payment-recon
-just test apps/finance-payment-recon
-just bundle-validate apps/finance-payment-recon
+make lint P=apps/finance-payment-recon
+make test P=apps/finance-payment-recon
+make bundle-validate P=apps/finance-payment-recon
 ```
 
 All three must pass.
@@ -137,14 +137,14 @@ base_parameters:
 The legacy Databricks Job continues writing to `silver.payment_recon`. The DAB-managed job writes to `silver.payment_recon_v2`.
 
 ```bash
-just bundle-deploy apps/finance-payment-recon -t dev
-just bundle-run    apps/finance-payment-recon payment_recon_daily -t dev
+make bundle-deploy P=apps/finance-payment-recon T=dev
+make bundle-run P=apps/finance-payment-recon JOB=payment_recon_daily T=dev
 ```
 
 ## Step 9 — Diff daily for ≥ 7 days
 
 ```bash
-just diff-outputs apps/finance-payment-recon \
+make diff-outputs BUNDLE=apps/finance-payment-recon LEGACY=\
   cdo_dev.silver.payment_recon \
   cdo_dev.silver.payment_recon_v2 \
   --key payment_id
@@ -173,7 +173,7 @@ Capture the migration as `docs/adr/00NN-import-payment-recon.md`:
 The migration is reversible until cut-over: the legacy job is still running and still writing the canonical table. To roll back, simply destroy the new DAB-managed job:
 
 ```bash
-just bundle-destroy apps/finance-payment-recon -t dev
+make bundle-destroy P=apps/finance-payment-recon T=dev
 ```
 
 After cut-over, rollback means flipping consumers back to the legacy table (which still has historical data) and reactivating the legacy job. Plan for this taking ~30 minutes.
@@ -181,7 +181,7 @@ After cut-over, rollback means flipping consumers back to the legacy table (whic
 ## Common questions
 
 **Q: The job uses a JAR. Will this work?**
-Yes. `spark_jar_task` is fully supported. The JAR lives at `apps/<name>/target/scala-2.12/...assembly.jar` (Scala) and is built by `just sbt-assembly apps/<name>`.
+Yes. `spark_jar_task` is fully supported. The JAR lives at `apps/<name>/target/scala-2.12/...assembly.jar` (Scala) and is built by `make sbt-assembly P=apps/<name>`.
 
 **Q: The job runs every 15 minutes — is shadow-running 7 days expensive?**
 Yes — shadow-running doubles compute cost for that pipeline. For high-frequency jobs, consider a 3-day shadow with stricter diff thresholds, or shadow only during business hours. Document the deviation in the import notes.

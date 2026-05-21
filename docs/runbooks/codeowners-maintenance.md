@@ -46,14 +46,14 @@ Files to edit in one MR:
 - `docs/compliance/im8.md`, `pdpa.md`, `soc2.md` (any references)
 - Root `AGENTS.md` folder map
 
-After local edits, `just lint` will run `check_ownership_sync.py` and fail
+After local edits, `make lint` will run `check_ownership_sync.py` and fail
 fast if any reference was missed.
 
 ## Quarterly access review
 
 First Monday of January / April / July / October:
 
-1. `just dump-access prod` produces three CSVs (CODEOWNERS expansion,
+1. `make dump-access T=prod` produces three CSVs (CODEOWNERS expansion,
    Databricks ACLs, UC grants).
 2. @cdo/data-governance + @cdo/security walk through each row.
 3. Stale entries removed via MR.

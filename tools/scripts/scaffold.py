@@ -29,7 +29,7 @@ def scaffold_python_app(name: str) -> None:
     pkg = name.replace("-", "_")
     root = REPO_ROOT / "apps" / name
     print(f"Scaffolding Python DAB: {root.relative_to(REPO_ROOT)}")
-    _write(root / "AGENTS.md", f"# {name}\n\nTODO: describe what this bundle does.\n")
+    _write(root / "AGENTS.md", f"# {name}\n\nTODO: describe what this bundle does.\n\n## Owner\n@cdo/TODO-team\n\n## Inputs\n- (declare tables this app reads from)\n\n## Outputs\n- (declare tables this app writes to)\n\n## Schedule\nTODO\n\n## Rules\n- (app-specific rules)\n")
     _write(root / "bundle.yml", dedent(f"""
         resources:
           jobs:
@@ -85,7 +85,7 @@ def scaffold_python_app(name: str) -> None:
 def scaffold_scala_app(name: str) -> None:
     root = REPO_ROOT / "apps" / name
     print(f"Scaffolding Scala DAB: {root.relative_to(REPO_ROOT)}")
-    _write(root / "AGENTS.md", f"# {name}\n\nTODO: describe what this bundle does.\n")
+    _write(root / "AGENTS.md", f"# {name}\n\nTODO: describe what this bundle does.\n\n## Owner\n@cdo/TODO-team\n\n## Inputs\n- (declare tables this app reads from)\n\n## Outputs\n- (declare tables this app writes to)\n\n## Schedule\nTODO\n\n## Rules\n- (app-specific rules)\n")
     _write(root / "bundle.yml", dedent(f"""
         resources:
           jobs:

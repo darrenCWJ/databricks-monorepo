@@ -14,7 +14,7 @@ mono-dev/
 ├── docs/                  # ADRs, runbooks, compliance, onboarding guides
 ├── databricks.yml         # Root DAB config (dev/staging/prod targets)
 ├── pyproject.toml         # Python workspace root (uv)
-├── justfile               # Command surface for all operations
+├── Makefile               # Command surface for all operations
 ├── .gitlab-ci.yml         # CI/CD pipeline (affected-only)
 ├── CODEOWNERS             # Per-team ownership and review routing
 ├── AGENTS.md              # AI agent instructions (Claude, Cursor, Copilot, Genie)
@@ -31,17 +31,17 @@ mono-dev/
 |------|---------|---------|
 | Python | 3.11+ | System or pyenv |
 | uv | latest | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
-| just | latest | `brew install just` or [github.com/casey/just](https://github.com/casey/just) |
+| make | 3.81+ | Pre-installed on macOS and Linux |
 | Databricks CLI | 0.18+ | `pip install databricks-cli` or [setup-cli](https://github.com/databricks/setup-cli) |
 | Git | 2.30+ | System |
-| pre-commit | 3.8+ | Installed via `just setup` |
+| pre-commit | 3.8+ | Installed via `make setup` |
 
 ### First-time setup
 
 ```bash
 git clone git@sgts.gitlab-dedicated.com:wog/gvt/dart/gvt-dsaid-dart/mono-dev.git
 cd mono-dev
-just setup
+make setup
 ```
 
 This installs all Python dependencies, sets up pre-commit hooks, and
@@ -50,9 +50,9 @@ configures the uv workspace.
 ### Verify everything works
 
 ```bash
-just lint .          # Check code quality
-just test .          # Run all tests
-just affected        # See what's changed vs main
+make lint P=.          # Check code quality
+make test P=.          # Run all tests
+make affected        # See what's changed vs main
 ```
 
 ---
@@ -65,25 +65,25 @@ You build and maintain batch/streaming pipelines that run on Databricks.
 
 1. **Create a new pipeline:**
    ```bash
-   just new-app <team>-<verb>-<noun> --kind python
-   # Example: just new-app finance-payment-recon --kind python
+   make new-app NAME=<team>-<verb>-<noun> KIND=python
+   # Example: make new-app NAME=finance-payment-recon KIND=python
    ```
 
 2. **Write your logic** in `apps/<name>/src/<package>/` (not in notebooks).
 
 3. **Write tests first:**
    ```bash
-   just test apps/<name>
+   make test P=apps/<name>
    ```
 
 4. **Validate the bundle:**
    ```bash
-   just bundle-validate apps/<name>
+   make bundle-validate P=apps/<name>
    ```
 
 5. **Deploy to dev:**
    ```bash
-   just bundle-deploy apps/<name> -t dev
+   make bundle-deploy P=apps/<name> T=dev
    ```
 
 6. **Open a merge request** targeting `main`.
@@ -115,7 +115,7 @@ You build ML training pipelines, experiments, and model serving.
 
 2. **When ready to productionise**, extract logic into a proper app:
    ```bash
-   just new-app <team>-train-<model> --kind python
+   make new-app NAME=<team>-train-<model> KIND=python
    ```
 
 3. **Structure your code:**
@@ -135,8 +135,8 @@ You build ML training pipelines, experiments, and model serving.
 
 5. **Test locally**, then open an MR:
    ```bash
-   just test apps/<name>
-   just lint apps/<name>
+   make test P=apps/<name>
+   make lint P=apps/<name>
    ```
 
 ### Key conventions
@@ -184,7 +184,7 @@ You maintain the shared infrastructure, CI/CD, and developer tooling.
 
 **Run quarterly audit:**
 ```bash
-just dump-access prod
+make dump-access T=prod
 ```
 
 ### Relevant docs
@@ -229,7 +229,7 @@ All agents follow the same rules as human engineers:
 After configuring a new agent, run these prompts to verify it has context:
 
 1. "Read AGENTS.md. Tell me three rules you'll follow."
-2. "Run `just affected` and tell me what would deploy."
+2. "Run `make affected` and tell me what would deploy."
 3. "Scaffold a new Python app called `test-validation`. Show me the generated files."
 
 ### Relevant docs
@@ -301,22 +301,22 @@ Full details: `docs/runbooks/branching-strategy.md`
 
 | Command | Description |
 |---------|-------------|
-| `just setup` | Bootstrap: install deps + pre-commit hooks |
-| `just test PATH` | Run pytest scoped to PATH |
-| `just test-cov PATH` | Run tests with coverage report |
-| `just lint PATH` | Lint (ruff + mypy) |
-| `just fix PATH` | Auto-fix lint issues |
-| `just bundle-validate PATH` | Validate a DAB |
-| `just bundle-deploy PATH TARGET` | Deploy a DAB (default: dev) |
-| `just bundle-run PATH JOB TARGET` | Trigger a job run |
-| `just bundle-destroy PATH TARGET` | Tear down a DAB |
-| `just new-app NAME --kind KIND` | Scaffold new app (python/scala) |
-| `just new-lib NAME` | Scaffold new shared library |
-| `just import-job JOB_ID TARGET` | Import existing Databricks Job |
-| `just affected` | List what changed vs main |
-| `just where-is MODEL` | Locate a model and its consumers |
-| `just dump-access TARGET` | Export access grants for audit |
-| `just ci-local` | Run full CI locally |
+| `make setup` | Bootstrap: install deps + pre-commit hooks |
+| `make test P=PATH` | Run pytest scoped to PATH |
+| `make test-cov P=PATH` | Run tests with coverage report |
+| `make lint P=PATH` | Lint (ruff + mypy) |
+| `make fix P=PATH` | Auto-fix lint issues |
+| `make bundle-validate P=PATH` | Validate a DAB |
+| `make bundle-deploy P=PATH T=TARGET` | Deploy a DAB (default: dev) |
+| `make bundle-run P=PATH JOB=JOB T=TARGET` | Trigger a job run |
+| `make bundle-destroy P=PATH T=TARGET` | Tear down a DAB |
+| `make new-app NAME=NAME KIND=KIND` | Scaffold new app (python/scala) |
+| `make new-lib NAME=NAME` | Scaffold new shared library |
+| `make import-job JOB_ID=JOB_ID T=TARGET` | Import existing Databricks Job |
+| `make affected` | List what changed vs main |
+| `make where-is MODEL=MODEL` | Locate a model and its consumers |
+| `make dump-access T=TARGET` | Export access grants for audit |
+| `make ci-local` | Run full CI locally |
 
 ---
 

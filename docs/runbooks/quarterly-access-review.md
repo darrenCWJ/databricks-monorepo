@@ -10,7 +10,7 @@ First Monday of January, April, July, October.
 
 1. Run dump:
    ```bash
-   just dump-access prod
+   make dump-access T=prod
    ```
    Outputs `reviews/YYYY-MM-DD/codeowners.csv`, `databricks-acls.csv`, `uc-grants.csv`.
 2. For each row in `codeowners.csv`, confirm the listed group still owns that path.

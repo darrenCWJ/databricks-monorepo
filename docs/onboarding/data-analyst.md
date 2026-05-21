@@ -15,7 +15,7 @@ You will build dbt models for your team's domain, classified for IM8 + PDPA.
 
 ## Day 2 — get familiar
 - Read root `AGENTS.md`, `dbt/AGENTS.md`, your team's `dbt/<team>/AGENTS.md`
-- Run `just dbt-build <team>` — watch what builds
+- Run `make dbt-build PROJECT=<team>` — watch what builds
 - Browse `dbt/<team>/models/marts/schema.yml`: every column has `meta.pii`,
   `meta.classification`, `meta.sensitivity`, `meta.retention_days`
 

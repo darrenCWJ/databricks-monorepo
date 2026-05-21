@@ -83,7 +83,7 @@ For each affected app:
    tools/scripts/audit_log.py records the deploy
    ↓
 Engineer can immediately run the dev job:
-   just bundle-run apps/<name> <task> -t dev
+   make bundle-run P=apps/<name> JOB=<task> T=dev
 ```
 
 No human intervention. The dev environment is the sandbox; lots of merges per day are fine.

@@ -5,10 +5,12 @@ Rules:
 1. File must start with a `# <name>` heading.
 2. Must contain a "Rules" or "Public API" section (apps vs libs).
 3. Must be <= 200 lines (progressive disclosure principle).
-4. Must reference `just` for commands, not raw tool names.
+4. Must reference `make` for commands, not raw tool names.
+5. App AGENTS.md must have ## Inputs and ## Outputs sections.
 """
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -30,12 +32,21 @@ def lint(path: Path) -> list[str]:
     if "rules" not in lower and "public api" not in lower:
         errs.append(f"{path}: must contain a `Rules` or `Public API` section")
 
-    # Forbid raw command invocations that bypass justfile (common drift signal).
+    # Forbid raw command invocations that bypass Makefile (common drift signal).
     forbidden = ["databricks bundle deploy", "uv run pytest", "sbt clean"]
     for line in lines:
         for f in forbidden:
-            if f in line and "just " not in line and "<!-- raw-ok -->" not in line:
-                errs.append(f"{path}:{lines.index(line)+1}: prefer `just` over raw `{f}`")
+            if f in line and "make " not in line and "<!-- raw-ok -->" not in line:
+                errs.append(f"{path}:{lines.index(line)+1}: prefer `make` over raw `{f}`")
+
+    # App AGENTS.md must declare Inputs and Outputs for data-map generation.
+    is_app = re.search(r"[/\\]apps[/\\][^/\\]+[/\\]AGENTS\.md$", str(path))
+    if is_app:
+        headers = [h.strip().lower() for h in re.findall(r"^## (.+)$", text, re.MULTILINE)]
+        if "inputs" not in headers:
+            errs.append(f"{path}: app AGENTS.md must have a `## Inputs` section")
+        if "outputs" not in headers:
+            errs.append(f"{path}: app AGENTS.md must have a `## Outputs` section")
 
     return errs
 

@@ -19,17 +19,17 @@ apps/<team>-<verb>-<noun>/
 1. One app = one team's concern. Never edit across app boundaries in one PR.
 2. Business logic goes in `src/`, not notebooks. Notebooks are thin shims.
 3. Every app must have `AGENTS.md` (≤80 lines) describing purpose, I/O, SLA.
-4. Tests must pass locally before opening an MR (`just test apps/<name>`).
+4. Tests must pass locally before opening an MR (`make test P=apps/<name>`).
 5. No secrets in code. Use Databricks secret scopes via `${secrets.scope.key}`.
 
 ## Creating a new app
 ```bash
-just new-app <name> --kind python|scala|streaming
+make new-app NAME=<name> KIND=python|scala|streaming
 ```
 
 ## Deploying
 ```bash
-just bundle-validate apps/<name>
-just bundle-deploy apps/<name> -t dev
-just bundle-run apps/<name> <task_key> -t dev
+make bundle-validate P=apps/<name>
+make bundle-deploy P=apps/<name> T=dev
+make bundle-run P=apps/<name> JOB=<task_key> T=dev
 ```

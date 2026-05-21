@@ -21,5 +21,5 @@ compliance, and developer productivity.
 
 ## Rules
 1. Scripts are owned by `@cdo/platform-team`.
-2. Scripts must be invocable via `just` (see root `justfile`).
+2. Scripts must be invocable via `make` (see root `Makefile`).
 3. No business logic here — only cross-cutting platform concerns.

@@ -48,6 +48,12 @@ compute-affected:
     paths: [affected.json]
     expire_in: 1 day
 
+check-data-map:
+  stage: validate
+  script:
+    - *setup-uv
+    - uv run python tools/scripts/gen_data_map.py --check
+
 # ============ test ============
 test-python:
   stage: test
