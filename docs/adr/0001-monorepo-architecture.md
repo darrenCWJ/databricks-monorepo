@@ -12,7 +12,7 @@ Need a code home that survives the migration and serves AI coding agents well.
 ## Decision
 
 One monorepo, native per-language toolchains, DAB as the deploy unit,
-`justfile` as the single command surface, `AGENTS.md` per folder.
+`Makefile` as the single command surface, `AGENTS.md` per folder.
 
 ## Considered alternatives
 

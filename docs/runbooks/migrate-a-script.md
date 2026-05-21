@@ -5,7 +5,7 @@ Use this when you have a legacy ETL/ML/streaming script that needs to live in
 
 ## Step 1 — scaffold
 ```bash
-just new-app my-pipeline --kind python    # or --kind scala
+make new-app NAME=my-pipeline KIND=python    # or --kind scala
 ```
 This creates `apps/my-pipeline/` with `bundle.yml`, `src/`, `tests/`, `notebooks/`, and an `AGENTS.md` stub.
 
@@ -31,8 +31,8 @@ Write a unit test in `apps/my-pipeline/tests/` that exercises the function with 
 ## Step 4 — shadow
 Deploy to dev alongside legacy, writing to a separate table:
 ```bash
-just bundle-deploy apps/my-pipeline -t dev
-just bundle-run apps/my-pipeline my_pipeline_daily -t dev
+make bundle-deploy P=apps/my-pipeline T=dev
+make bundle-run P=apps/my-pipeline JOB=my_pipeline_daily T=dev
 ```
 Configure `bundle.yml` so the new job writes to e.g. `silver.customer_360_v2`
 while legacy continues writing to `silver.customer_360`.
@@ -40,7 +40,7 @@ while legacy continues writing to `silver.customer_360`.
 ## Step 5 — diff
 Run for at least 7 calendar days, then:
 ```bash
-just diff-outputs apps/my-pipeline \
+make diff-outputs BUNDLE=apps/my-pipeline LEGACY=\
   cdo_dev.legacy.customer_360 \
   cdo_dev.silver.customer_360_v2 \
   --key customer_id

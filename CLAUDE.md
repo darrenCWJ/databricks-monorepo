@@ -2,58 +2,51 @@
 
 @AGENTS.md
 
-## Agent Delegation
+## Efficiency Principle
 
-Use agents proactively — do not wait for the user to ask:
+Run targeted checks for the specific action — do not scan the full repo.
+Only read the AGENTS.md of the directory being edited, not every folder.
 
-| Trigger | Agent(s) | Action |
-|---------|----------|--------|
-| New feature / pipeline request | `planner` | Plan before coding. Identify affected scopes via `just affected`. |
-| Any code written or modified | `code-reviewer` | Review immediately after changes. |
-| New app, lib, or function | `tdd-guide` | Write tests first. Verify 80%+ coverage. |
-| Architectural decision | `architect` | Evaluate trade-offs, produce ADR if significant. |
-| Security-sensitive code (auth, grants, PII, masks) | `security-reviewer` | BLOCK commit until CRITICAL issues resolved. |
-| Build or lint failure | `build-error-resolver` | Fix incrementally, verify after each fix. |
-| Terraform / Unity Catalog changes | `security-reviewer` + `architect` | Both required — parallel review. |
-| Python code changes | `python-reviewer` | PEP 8, type hints, PySpark idioms, ruff compliance. |
-| Refactoring or dead code | `refactor-cleaner` | Identify and remove unused code safely. |
+## Pre-checks (scoped to the action)
 
-## Skills (invoke via `/skill-name`)
+| Action | Check first |
+|--------|-------------|
+| New app/pipeline | `ls apps/ \| grep <name>` (name collision only) |
+| Edit existing app | Read that app's `AGENTS.md` for inputs/outputs/rules |
+| Write to a table | Verify `mask_function` if column is Restricted |
+| Change a library in `libs/` | grep consumers: `grep -r "<lib_name>" apps/*/pyproject.toml` |
+| Change infra/ | Flag for security review |
+| Need data from another team | Use cross-project ref (`{{ ref('project', 'model') }}`) or read via Delta — never import their Python code directly |
 
-### Databricks (from AI Dev Kit — installed globally)
-- `databricks-bundles` — DAB authoring, targets, variables, includes
-- `databricks-python-sdk` — SDK, Databricks Connect, CLI, REST API
-- `databricks-dbsql` — SQL warehouses, materialized views, AI functions
-- `databricks-unity-catalog` — Catalogs, schemas, grants, lineage
-- `databricks-jobs` — Job configuration, scheduling, clusters
-- `databricks-spark-structured-streaming` — Streaming pipelines, Kafka, triggers
-- `databricks-spark-declarative-pipelines` — DLT / declarative pipelines
+## Shared code (`libs/`)
 
-### Python Development
-- `python-patterns` — Idiomatic Python, type hints, async
-- `python-testing` — pytest, TDD, fixtures, mocking, parametrization
-- `tdd-workflow` — Red-Green-Refactor cycle enforcement
-- `security-review` — OWASP, secrets, injection, unsafe patterns
+- Shared libraries live in `libs/`. Apps declare dependencies in their `pyproject.toml`.
+- **Editing a lib:** grep for which apps import it. If you change the API, note which consumers break.
+- **Using a lib:** import it directly. If nothing in `libs/` fits, inline it — promote to a lib later if 2+ apps need it.
+- CI pre-commit hook (`check_boundaries.py`) blocks cross-team Python imports. Use `libs/` or read via data contract.
 
-### CI / Git / Deployment
-- `git-workflow` — Branching, commits, conflict resolution
-- `deployment-patterns` — CI/CD, environments, rollback strategies
+## Cross-team data
 
-## Workflow Checklist
+- Each app's `AGENTS.md` lists its inputs (tables it reads) and outputs (tables it writes).
+- To read another team's table: query it via Delta/SQL — no Python import needed.
+- dbt cross-project refs: `{{ ref('platform_core', 'fct_orders') }}` — makes the dependency explicit.
+- The agent does NOT need to scan other apps to find available tables. Check `docs/data-architecture.md` Table 2 if unsure what's available.
 
-Before any code change:
-1. `just affected` — understand blast radius
-2. Read per-folder `AGENTS.md` for the directory being edited
-3. For data writes: verify target table's `mask_function` if `Restricted`
+## Agent delegation (action-dependent)
 
-Before suggesting a commit:
-1. `just lint PATH && just test PATH` must pass
-2. `code-reviewer` agent must approve (no CRITICAL/HIGH issues)
+| Action | Agent | Why |
+|--------|-------|-----|
+| New feature with multiple dependencies | `planner` | Identify cross-app dependencies upfront |
+| Writing new code | `tdd-guide` | Tests alongside implementation |
+| Security-sensitive code (auth, grants, PII, masks) | `security-reviewer` | Block commit until resolved |
+| Build/lint fails | `build-error-resolver` | Fix immediately |
+| Code written and ready for commit | `code-reviewer` | Quality gate before merge |
+| Terraform / Unity Catalog changes | `security-reviewer` + `architect` | Both required |
+
+Skip agents for simple tasks (single-file edits, running commands, docs updates).
+
+## Before committing
+
+1. `make lint P=<path> && make test P=<path>` must pass
+2. `code-reviewer` agent approves (no CRITICAL/HIGH issues)
 3. For infra: `security-reviewer` must approve
-
-## Parallel Agent Patterns
-
-For complex tasks, spawn agents in parallel:
-- Security analysis + code review + test coverage (3 agents simultaneously)
-- Architecture evaluation + performance review (2 agents simultaneously)
-- Never run sequentially when agents are independent

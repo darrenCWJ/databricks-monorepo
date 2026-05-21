@@ -292,7 +292,7 @@ One query, four layers of gating, all declared in version-controlled files.
 ## Quarterly audit
 
 ```bash
-just dump-access prod
+make dump-access T=prod
 ```
 
 Produces under `reviews/YYYY-MM-DD/`:

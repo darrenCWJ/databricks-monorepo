@@ -15,7 +15,7 @@ Run this only when one of the four triggers fires:
 | Cross-language change-impact pain | Daily false negatives or false positives from `affected.py` |
 | Audit / regulatory pressure for fully reproducible builds | E.g., FedRAMP-style hermetic action graphs |
 
-If none of these are true, stay on uv + justfile + `affected.py`.
+If none of these are true, stay on uv + Makefile + `affected.py`.
 
 ## What survives the migration
 
@@ -37,7 +37,7 @@ About 95% of the repository:
 |---|---|
 | `pyproject.toml` `[tool.uv.workspace]` | `pants.toml` + `BUILD` files per package |
 | `uv.lock` | `3rdparty/python/default.lock` (Pants resolves) — or keep `uv.lock` for IDEs |
-| `justfile` recipes | Same recipes, but invoke `pants <goal>` |
+| `Makefile` recipes | Same recipes, but invoke `pants <goal>` |
 | `tools/scripts/affected.py` | Delete — `pants --changed-since=origin/main` replaces it |
 | `build.sbt` per Scala app | Pants JVM `BUILD` targets |
 | `.gitlab-ci.yml` | Rewritten around `pants test ::`, `pants lint ::`, `pants package ::` |
@@ -158,9 +158,9 @@ bundle-validate:
 
 Delete `tools/scripts/affected.py` and its pre-commit hook.
 
-### Phase 5 — justfile pass-through (week 7)
+### Phase 5 — Makefile pass-through (week 7)
 
-The `justfile` becomes a thin wrapper so engineers don't have to learn
+The `Makefile` becomes a thin wrapper so engineers don't have to learn
 two CLIs in week 1:
 
 ```make
@@ -174,17 +174,17 @@ bundle-validate PATH:
     cd {{PATH}} && databricks bundle validate
 ```
 
-(Could also just retire the justfile — engineers learn `pants` direct.
+(Could also just retire the Makefile — engineers learn `pants` direct.
 Team preference.)
 
 ### Phase 6 — AGENTS.md cascade (week 8)
 
-Find/replace `just <verb>` with `pants <verb>` across every `AGENTS.md`
+Find/replace `make <verb>` with `pants <verb>` across every `AGENTS.md`
 in the repo:
 
 ```bash
-git grep -l 'just test\|just lint\|just bundle-validate' \
-  | xargs sed -i '' 's/just test/pants test/g; s/just lint/pants lint/g'
+git grep -l 'make test\|make lint\|make bundle-validate' \
+  | xargs sed -i '' 's/make test/pants test/g; s/make lint/pants lint/g'
 ```
 
 Open one MR per major area: root AGENTS.md, dbt/AGENTS.md, apps,
@@ -254,7 +254,7 @@ runs in Phase 6.
 
 Negligible. `AGENTS.md` is the contract between the agent and the repo;
 the agent reads "use `pants test PATH`" the same way it reads
-"use `just test PATH`" today. Folder structure, classification contracts,
+"use `make test P=PATH`" today. Folder structure, classification contracts,
 cross-project ref pattern, `where_is.py` — all unchanged.
 
 The single MR that updates every `AGENTS.md`'s command surface is the

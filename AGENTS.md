@@ -6,14 +6,14 @@ Scala (Spark streaming).
 Deploy unit: Databricks Asset Bundle (DAB), one per directory under `apps/`.
 
 ## Command surface (use these, not ad-hoc commands)
-- `just setup` — install all deps, set up pre-commit
-- `just test PATH` — run tests scoped to PATH (file or dir)
-- `just lint PATH` — ruff + mypy + scalafmt
-- `just bundle-validate PATH` — `databricks bundle validate`
-- `just bundle-deploy PATH -t dev` — deploy bundle to dev target
-- `just affected` — list bundles affected by current git diff
-- `just new-app NAME KIND` — scaffold a new DAB (KIND=python|scala|streaming)
-- `just import-job JOB_ID PATH` — import an existing Databricks Job into PATH (see docs/runbooks/import-existing-job.md)
+- `make setup` — install all deps, set up pre-commit
+- `make test P=<path>` — run tests scoped to path (file or dir)
+- `make lint P=<path>` — ruff + mypy + scalafmt
+- `make bundle-validate P=<path>` — `databricks bundle validate`
+- `make bundle-deploy P=<path> T=dev` — deploy bundle to dev target
+- `make affected` — list bundles affected by current git diff
+- `make new-app NAME=<name> KIND=python|scala|streaming` — scaffold a new DAB
+- `make import-job JOB_ID=<id> T=<path>` — import an existing Databricks Job (see docs/runbooks/import-existing-job.md)
 
 ## Folder map
 - `apps/`    deploy units (DABs). Edit here to ship behaviour.
@@ -27,7 +27,7 @@ Deploy unit: Databricks Asset Bundle (DAB), one per directory under `apps/`.
    different teams (see CODEOWNERS).
 2. Library API changes go in a dedicated PR; consumers update separately.
 3. New deploy unit = new directory under `apps/` with `bundle.yml` + `AGENTS.md`.
-4. Tests must pass locally before opening a PR (`just test PATH`).
+4. Tests must pass locally before opening a PR (`make test P=<path>`).
 5. Notebook code that isn't unit-tested must be wrapped in a thin Python
    function in `src/` that IS tested.
 6. Do not commit secrets. Use Databricks secret scopes; reference via

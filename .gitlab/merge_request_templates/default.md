@@ -7,9 +7,9 @@
 - Related issue: #
 
 ## How tested
-- [ ] Ran `just test <scope>` locally
+- [ ] Ran `make test P=<scope>` locally
 - [ ] Added/updated unit tests
-- [ ] `just bundle-validate <bundle>` passes
+- [ ] `make bundle-validate P=<bundle>` passes
 - [ ] Verified in dev workspace (paste link or screenshot)
 
 ## Risk & rollback

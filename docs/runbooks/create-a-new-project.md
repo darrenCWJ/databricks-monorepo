@@ -49,27 +49,27 @@ Naming convention:
 Prefix is the team handle (lowercase, hyphenated). The prefix routes
 CODEOWNERS, `affected.py`, pre-commit boundary checks, and CI fan-out.
 
-Confirm with your team lead before scaffolding. If a similar name already
-exists, talk to that team first.
+Before scaffolding, check for name collision: `ls apps/ | grep <name>`.
+Cross-team data reads are flagged during code review, not at scaffold time.
 
 ## Step 2 — scaffold
 
 For an app (Python):
 
 ```bash
-just new-app finance-payment-recon --kind python
+make new-app NAME=finance-payment-recon KIND=python
 ```
 
 For an app (Scala):
 
 ```bash
-just new-app fraud-streaming-v2 --kind scala
+make new-app NAME=fraud-streaming-v2 KIND=scala
 ```
 
 For a library:
 
 ```bash
-just new-lib finance-common
+make new-lib NAME=finance-common
 ```
 
 For a dbt project (manual — no scaffold yet):
@@ -128,7 +128,7 @@ the right row/column.
 Then sync the workspace:
 
 ```bash
-just setup
+make setup
 ```
 
 ## Step 4 — fill in the AGENTS.md
@@ -157,19 +157,19 @@ For Python apps and libs:
 - Pure transforms in `src/<package>/transforms.py` or similar
 - Unit tests in `tests/` using `pytest`
 - Use `testing_utils.spark_fixture` for Spark
-- Run: `just test apps/<name>` — should run green before any deploy
+- Run: `make test P=apps/<name>` — should run green before any deploy
 
 For Scala:
 - Tests in `src/test/scala/`
 - Use ScalaTest
-- Run: `just sbt-test apps/<name>`
+- Run: `make sbt-test P=apps/<name>`
 
 For dbt:
 - Every model needs `not_null` on its PK
 - `unique` on dim/fact PKs
 - `meta.pii`, `meta.classification`, `meta.sensitivity`, `meta.retention_days`
   on EVERY column (pre-commit blocks the MR otherwise)
-- Run: `just dbt-test <project>`
+- Run: `make dbt-test PROJECT=<project>`
 
 The first MR should not contain business logic and zero tests. If you find
 yourself there, stop and write tests for the existing scaffold first.
@@ -193,9 +193,9 @@ add a `synced_database_tables` resource — see
 ## Step 7 — pre-flight check locally
 
 ```bash
-just lint apps/<name>             # ruff + mypy + sqlfluff + scalafmt
-just test apps/<name>             # pytest (or sbt-test for Scala)
-just bundle-validate apps/<name>  # databricks bundle validate
+make lint P=apps/<name>             # ruff + mypy + sqlfluff + scalafmt
+make test P=apps/<name>             # pytest (or sbt-test for Scala)
+make bundle-validate P=apps/<name>  # databricks bundle validate
 ```
 
 All three must pass before opening an MR. If `bundle-validate` fails on a
@@ -238,7 +238,7 @@ When the MR merges to `main`, the `deploy-dev` job runs automatically:
 Watch the deploy log. Trigger the job manually first time:
 
 ```bash
-just bundle-run apps/<name> <task_key> -t dev
+make bundle-run P=apps/<name> JOB=<task_key> T=dev
 ```
 
 If the job fails, fix and re-MR. The dev environment is the sandbox.
@@ -277,14 +277,14 @@ ADRs are optional for routine new projects but required when the project:
 - [ ] Decided the project kind (app / lib / dbt / mixed)
 - [ ] Picked a `<team>-<verb>-<noun>` name
 - [ ] Confirmed owner with team lead
-- [ ] `just new-app NAME --kind python|scala` OR `just new-lib NAME` OR manual dbt scaffold
+- [ ] `make new-app NAME=NAME KIND=python|scala` OR `make new-lib NAME=NAME` OR manual dbt scaffold
 - [ ] Added to `pyproject.toml` workspace members (Python)
 - [ ] Added to `CODEOWNERS` (or verified existing wildcard matches)
 - [ ] Added row(s) to `docs/data-architecture.md` (Tables 1, 2, 3)
 - [ ] Filled in `AGENTS.md` (≤80 lines)
 - [ ] Wrote at least one unit test (for non-dbt)
 - [ ] Every dbt column has `meta.*` fields (pre-commit will block otherwise)
-- [ ] `just lint` / `just test` / `just bundle-validate` all pass locally
+- [ ] `make lint` / `make test` / `make bundle-validate` all pass locally
 - [ ] Opened MR with change-ticket ID
 - [ ] CI green
 - [ ] CODEOWNER approved (not by author)
@@ -296,7 +296,7 @@ ADRs are optional for routine new projects but required when the project:
 
 - **Scaffolded but didn't register.** The new project exists on disk but
   is invisible to CI and tooling. Fix: add to `pyproject.toml` workspace
-  members, run `just setup`.
+  members, run `make setup`.
 - **Skipped the `meta.*` block on dbt columns.** Pre-commit blocks the
   MR. Fix: classify every column. If unsure, `@cdo/data-governance` will
   advise.

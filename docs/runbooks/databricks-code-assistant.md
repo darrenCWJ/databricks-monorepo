@@ -82,7 +82,7 @@ Git-Folder push lifecycle.
   routing, the cross-project ref pattern — Genie Code may need to be
   prompted explicitly to consider these.
 - **Knowing about `just` and `affected.py`.** It can call them via
-  `%sh just affected`, but won't volunteer that. Prompt for it.
+  `%sh make affected`, but won't volunteer that. Prompt for it.
 - **Notebook hygiene.** Tends to put business logic in the notebook
   rather than wrapping it in `src/`. CODEOWNER review catches this.
 
@@ -92,7 +92,7 @@ Run these in your first session to confirm Genie Code is operating with
 the right context.
 
 > **Prompt 1.** "Read AGENTS.md and tell me three rules. Then run
-> `just affected` via `%sh` and tell me what would deploy."
+> `make affected` via `%sh` and tell me what would deploy."
 
 > **Prompt 2.** "Open the schema.yml in `dbt/platform-core/models/marts/`.
 > Propose adding a column `vat_amount` (DECIMAL(18,2), Restricted PII)

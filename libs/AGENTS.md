@@ -23,12 +23,12 @@ libs/<name>/
 
 ## Creating a new library
 ```bash
-just new-lib <name>
+make new-lib NAME=<name>
 ```
 
 After creation, register in root `pyproject.toml` under `[tool.uv.workspace] members`.
 
 ## Testing
 ```bash
-just test libs/<name>
+make test P=libs/<name>
 ```
