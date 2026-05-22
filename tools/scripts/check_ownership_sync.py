@@ -10,6 +10,7 @@ Checks:
 Run manually:
     uv run python tools/scripts/check_ownership_sync.py
 """
+
 from __future__ import annotations
 
 import fnmatch
@@ -160,16 +161,12 @@ def main() -> int:
     # Check 2: every group in CODEOWNERS should be referenced or allowlisted
     for g in co_groups - set(refs.keys()):
         if g not in ALLOWED_UNREFERENCED:
-            warns.append(
-                f"Group {g} declared in CODEOWNERS but referenced nowhere else."
-            )
+            warns.append(f"Group {g} declared in CODEOWNERS but referenced nowhere else.")
 
     # Check 3: every apps/, libs/, dbt/ directory must match a CODEOWNERS rule
     for d in directories_to_check():
         if not matches_any_codeowners_glob(d, co_globs):
-            errs.append(
-                f"Directory /{d} has no specific CODEOWNERS rule (falls to default)."
-            )
+            errs.append(f"Directory /{d} has no specific CODEOWNERS rule (falls to default).")
 
     if warns:
         print("WARNINGS:", file=sys.stderr)

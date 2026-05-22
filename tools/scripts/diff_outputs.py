@@ -14,6 +14,7 @@ Usage:
 
 Fails (exit 1) if any check exceeds the configured tolerance.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -22,12 +23,18 @@ import sys
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--bundle", required=True, help="DAB directory (for tolerance config lookup)")
+    parser.add_argument(
+        "--bundle", required=True, help="DAB directory (for tolerance config lookup)"
+    )
     parser.add_argument("--legacy", required=True, help="Legacy table FQN")
     parser.add_argument("--new", required=True, help="New table FQN")
     parser.add_argument("--key", required=True, help="Primary key column")
-    parser.add_argument("--row-count-tolerance", type=float, default=0.001,
-                        help="Acceptable row-count delta (fraction).")
+    parser.add_argument(
+        "--row-count-tolerance",
+        type=float,
+        default=0.001,
+        help="Acceptable row-count delta (fraction).",
+    )
     args = parser.parse_args()
 
     # This script is intended to run on a Databricks cluster (or via dbsql).
