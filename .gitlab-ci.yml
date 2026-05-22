@@ -15,7 +15,7 @@ variables:
   # Set UV_INDEX_URL in protected CI variables, NOT in this file.
 
 default:
-  image: python:3.11-slim
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   cache:
     key:
       files:
@@ -25,7 +25,6 @@ default:
       - .venv/
 
 .setup-uv: &setup-uv
-  - pip install --quiet uv
   - uv sync --all-packages
 
 # ============ validate ============
