@@ -257,12 +257,238 @@ def test_<meaningful_name>() -> None:
 
 ---
 
-## Phase 3 — Register in Three Places
+## Phase 3 — Bronze / Ingest Tier
+
+> [Phase 3] Starting Bronze tier design — will ask about the data source before writing any code.
+
+### Step 3a: Understand the source
+
+Ask the user (all in one message):
+
+```
+Bronze tier — let's design the ingest layer.
+
+1. Source type
+   1. REST API  2. CSV/Parquet file drop  3. Database (JDBC)
+   4. Kafka/streaming  5. Other — describe
+
+2. Source details
+   - API: endpoint URL, HTTP method, auth type (API key / OAuth / bearer)
+   - File: landing path (dbfs:/ or abfss://), format, arrival pattern
+   - DB: connection alias, source table or query
+
+3. What does one record look like?
+   Paste a sample response / row, or list the fields and their types.
+   e.g.  payment_id: string, amount: float, currency: string, ts: timestamp
+
+4. Bronze table name
+   Recommended: `<catalog>.bronze.<pkg_name>`  — confirm or change
+
+5. Write mode
+   1. Append + partition by ingestion_date  (recommended for most sources)
+   2. Full refresh (overwrite)
+```
+
+### Step 3b: Present Bronze design — wait for confirmation
+
+```
+BRONZE DESIGN
+─────────────────────────────────────────────────────────────
+Source : <type> — <endpoint / path>
+Table  : <catalog>.bronze.<name>
+Mode   : <append partitioned by ingestion_date | full-refresh>
+
+Fields from source:
+  <field>   <type>   — as-is from source
+  ...
+
+Added by ingest:
+  ingestion_date   date     — run date
+  _source          string   — source identifier
+─────────────────────────────────────────────────────────────
+Confirm or correct before code is written.
+```
+
+### Step 3c: Write Bronze code
+
+After confirmation:
+- `src/<pkg>/ingest.py` — fetch + land logic, `ingest_<name>(catalog, run_date)` entry point
+- `notebooks/01_ingest.py` — thin shim only
+- `tests/test_ingest.py` — unit tests for field mapping and metadata tagging (mock the API/file read)
+
+---
+
+## Phase 4 — Silver / Transform Tier
+
+> [Phase 4] Starting Silver tier design — will show Bronze schema and ask what transformations are needed.
+
+### Step 4a: Show Bronze schema, ask for transformation intent
+
+Display the Bronze table and fields defined in Phase 3, then ask:
+
+```
+Silver tier — let's design the transformation layer.
+Bronze input: <catalog>.bronze.<name>
+
+Fields available:
+  <field1>  <type>
+  <field2>  <type>
+  ...
+
+Answer the following (all at once):
+
+1. Quality rules — which fields must pass checks to reach silver?
+   For each: field name, rule type, action on failure
+   Options: NOT NULL, > 0, IN [list], regex match, range [min,max]
+   Action: quarantine (keep row in _quarantine table) | drop | fail job
+   e.g.  payment_id: NOT NULL → quarantine
+         amount: > 0 → quarantine
+         currency: IN [SGD, USD, EUR] → quarantine
+
+2. Deduplication — deduplicate rows?
+   1. Yes — on which key field(s)? Keep: latest / first
+   2. No
+
+3. Derived fields — any new columns to compute?
+   e.g.  amount_sgd = amount * fx_rate
+   Or type "none"
+
+4. Silver table name
+   Recommended: `<catalog>.silver.<pkg_name>`  — confirm or change
+
+5. Quarantine table name (if any rules quarantine)
+   Recommended: `<catalog>.silver.<pkg_name>_quarantine`  — confirm or change
+```
+
+### Step 4b: Present Silver design — wait for confirmation
+
+```
+SILVER DESIGN
+─────────────────────────────────────────────────────────────
+Input     : <catalog>.bronze.<name>
+Output    : <catalog>.silver.<name>
+Quarantine: <catalog>.silver.<name>_quarantine
+
+Quality rules:
+  <field>  <rule>  → <action>
+  ...
+
+Deduplication: on <key>, keep <latest|first> by <timestamp>
+  — OR —  none
+
+Derived fields:
+  <new_field> = <expression>   (<why>)
+  ...
+
+Pass-through: all remaining fields from bronze
+─────────────────────────────────────────────────────────────
+Confirm or correct before code is written.
+```
+
+### Step 4c: Write Silver code
+
+After confirmation:
+- `src/<pkg>/silver.py` — quality rules dict, transform function, quarantine split
+- `notebooks/02_silver.py` — thin shim only
+- `tests/test_silver.py` — unit tests: one passing row, one row per failing rule, dedup behaviour
+
+---
+
+## Phase 5 — Gold / Serving Tier
+
+> [Phase 5] Starting Gold tier design — will show Silver schema and ask what the business wants to see.
+
+### Step 5a: Show Silver schema, ask for business output intent
+
+Display the Silver table and fields defined in Phase 4, then ask:
+
+```
+Gold tier — let's design the serving layer.
+Silver input: <catalog>.silver.<name>
+
+Fields available:
+  <field1>  <type>
+  <field2>  <type>
+  ...
+
+Answer the following (all at once):
+
+1. What does the business want to see?
+   Describe the report / dashboard / metric in plain English.
+   e.g. "Daily reconciled payment totals by currency and region,
+         with a count of flagged discrepancies."
+
+2. Dimensions — what to group by?
+   List fields to slice the data on.
+   e.g.  reconciliation_date, currency, region
+
+3. Metrics — what to measure?
+   For each: name, aggregation, source field
+   e.g.  total_amount = SUM(amount)
+         payment_count = COUNT(payment_id)
+         discrepancy_count = SUM(CASE WHEN is_discrepancy THEN 1 ELSE 0)
+
+4. Time grain
+   1. Daily  2. Weekly  3. Monthly  4. No aggregation (row-level)
+
+5. Write mode
+   1. Full refresh  (recommended for daily aggregates)
+   2. Incremental append
+
+6. Gold table name
+   Recommended: `<catalog>.gold.<pkg_name>`  — confirm or change
+
+7. Downstream consumers (optional — who will query this table?)
+   e.g.  Tableau dashboard, downstream DAB job, data science team
+   Or type "unknown"
+```
+
+### Step 5b: Present Gold design — wait for confirmation
+
+```
+GOLD DESIGN
+─────────────────────────────────────────────────────────────
+Input  : <catalog>.silver.<name>
+Output : <catalog>.gold.<name>
+Mode   : <full-refresh | incremental>
+
+Dimensions:
+  <field>  <type>
+
+Metrics:
+  <metric>  =  <aggregation>   — <business meaning>
+  ...
+
+Consumers: <listed consumers or "none registered yet">
+─────────────────────────────────────────────────────────────
+Confirm or correct before code is written.
+```
+
+### Step 5c: Write Gold code
+
+After confirmation:
+- `src/<pkg>/gold.py` — aggregation logic, `build_<name>(catalog, run_date)` entry point
+- `notebooks/03_gold.py` — thin shim only
+- `tests/test_gold.py` — unit tests: assert metric values against known input, assert row count
+
+---
+
+## Step 5d: Update AGENTS.md and bundle.yml with complete I/O
+
+Now that all three tiers are defined, update the files scaffolded in Phase 2:
+
+- **`AGENTS.md`** — replace placeholder Inputs/Outputs with real table names from Phases 3–5
+- **`bundle.yml`** — replace single `run` task with three sequential tasks:
+  `ingest → silver → gold` with proper `depends_on` chain
+
+---
+
+## Phase 6 — Register in Three Places
 
 All three must land in the same PR as the app code.
 
 ### `pyproject.toml`
-> [Phase 3] About to add workspace member to root pyproject.toml.
+> [Phase 6] About to add workspace member to root pyproject.toml.
 
 ```diff
  [tool.uv.workspace]
@@ -272,7 +498,7 @@ All three must land in the same PR as the app code.
 ```
 
 ### `CODEOWNERS`
-> [Phase 3] About to add CODEOWNERS entry (skip if wildcard already covers it).
+> [Phase 6] About to add CODEOWNERS entry (skip if wildcard already covers it).
 
 If no wildcard covers `apps/<name>`, add before `# ---- Libraries ----`:
 ```
@@ -280,7 +506,7 @@ If no wildcard covers `apps/<name>`, add before `# ---- Libraries ----`:
 ```
 
 ### `docs/data-architecture.md`
-> [Phase 3] About to regenerate data-architecture.md from AGENTS.md files.
+> [Phase 6] About to regenerate data-architecture.md from AGENTS.md files.
 
 ```bash
 make data-map
@@ -290,14 +516,14 @@ git add docs/data-architecture.md
 
 ---
 
-## Phase 4 — Claude & AI Context Setup
+## Phase 7 — Claude & AI Context Setup
 
 This phase is only needed if the human answered "yes" to Claude context
 in Pre-Flight. Ask if unsure.
 
-### Step 4a: Create app-level CLAUDE.md
+### Step 7a: Create app-level CLAUDE.md
 
-> [Phase 4] About to create apps/<name>/CLAUDE.md — this gives Claude domain context when helping with future development on this app.
+> [Phase 7] About to create apps/<name>/CLAUDE.md — this gives Claude domain context when helping with future development on this app.
 
 The app-level CLAUDE.md tells Claude what the app does, what rules must
 never be broken, and which data contracts are in place. Template:
@@ -330,7 +556,7 @@ make bundle-validate P=apps/<name>
 - <e.g. "Gold is full-refresh — do not read from it within the 2-min overwrite window">
 ```
 
-### Step 4b: Prompt about domain-specific skills
+### Step 7b: Prompt about domain-specific skills
 
 Ask the human:
 
@@ -346,7 +572,7 @@ Ask the human:
 If yes, help draft the skill using the `repo-health-check` or `migrate-app`
 skills in this repo as structural examples.
 
-### Step 4c: Identify applicable platform skills
+### Step 7c: Identify applicable platform skills
 
 Tell the human which existing platform skills apply to this app:
 
@@ -358,9 +584,9 @@ Tell the human which existing platform skills apply to this app:
 
 ---
 
-## Phase 5 — Write the ADR
+## Phase 8 — Write the ADR
 
-> [Phase 5] About to create docs/adr/00NN-<name>.md — records why this app was created (required for audit trail).
+> [Phase 8] About to create docs/adr/00NN-<name>.md — records why this app was created (required for audit trail).
 
 ```markdown
 # 00NN: Create <name>
@@ -385,7 +611,7 @@ Create `apps/<name>` as a Databricks Asset Bundle owned by @cdo/<team>.
 
 ---
 
-## Phase 6 — Pre-CI Checks (all must pass before opening MR)
+## Phase 9 — Pre-CI Checks (all must pass before opening MR)
 
 ```bash
 make lint P=apps/<name>            # ruff + mypy
@@ -403,18 +629,31 @@ Fix any failure before opening an MR.
 
 ## CI Compliance Checklist
 
+**Structure**
 - [ ] Pre-Flight answers captured — no TODOs remain in any committed file
-- [ ] Design review confirmed by human before scaffold ran
+- [ ] Design review (Phase 1) confirmed by human before scaffold ran
+
+**Tiers**
+- [ ] Bronze design confirmed before `ingest.py` was written
+- [ ] Silver design confirmed before `silver.py` was written — quality rules documented
+- [ ] Gold design confirmed before `gold.py` was written — metrics and consumers documented
+- [ ] `AGENTS.md` updated with final Inputs/Outputs from all three tiers (no placeholders)
+- [ ] `bundle.yml` has three tasks (`ingest → silver → gold`) with `depends_on` chain
+- [ ] `bundle.yml` has dev/staging/prod targets with `run_as` on staging/prod
+
+**Quality**
 - [ ] `make lint` passes
-- [ ] `make test` passes (>=1 meaningful unit test — not just a smoke test)
+- [ ] `make test` passes — meaningful tests for each tier (not smoke tests)
 - [ ] `make test-cov` passes (>=80%)
 - [ ] `make bundle-validate` passes
 - [ ] `pre-commit run --all-files` passes
-- [ ] `AGENTS.md` has Inputs, Outputs, Schedule, Rules — no TODOs
-- [ ] `bundle.yml` has dev/staging/prod targets with `run_as` on staging/prod
+
+**Registry**
 - [ ] `pyproject.toml` workspace member added
 - [ ] `CODEOWNERS` covers the new app
 - [ ] `docs/data-architecture.md` updated and committed
+
+**Documentation**
 - [ ] ADR committed in `docs/adr/`
 - [ ] App-level `CLAUDE.md` created (if human opted in)
 - [ ] No hardcoded secrets — use `${secrets.scope.key}`
@@ -430,8 +669,11 @@ Fix any failure before opening an MR.
 | Skipped Pre-Flight — TODOs left in AGENTS.md | Fill all stubs in Phase 2b before committing |
 | Skipped Design Review — scaffold ran before approval | Always show the design table and wait for confirmation |
 | Smoke test instead of meaningful unit test | Test real behaviour — assert outputs, not just "it ran" |
+| Skipped Bronze design review — wrote code before confirming schema | Show the design table and wait; source fields change often |
+| Silver quality rules not documented | Rules are contractual — write them in AGENTS.md Rules section |
+| Gold metrics not confirmed before writing | Business requirements change; confirm the exact aggregations first |
 | `bundle.yml` missing staging/prod `run_as` | Passes dev deploy, fails staging — add service principal |
-| No CLAUDE.md for a complex domain app | Future Claude sessions lose context — create it in Phase 4 |
+| No CLAUDE.md for a complex domain app | Future Claude sessions lose context — create it in Phase 7 |
 | Domain skill not created | Patterns get re-explained every session — write the skill once |
 | ADR skipped | Required for audit trail — takes 5 minutes, blocks SOC2 gap |
 | `data-architecture.md` not committed | `make check-data-map` fails in CI |
