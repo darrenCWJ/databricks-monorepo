@@ -1,4 +1,4 @@
-﻿---
+---
 name: migrate-app
 description: Use when migrating an existing standalone repo, script, or Databricks Job into the monorepo as a new app under apps/. Applies to lift-and-shift of Python or Scala workloads, notebook-heavy jobs needing DAB conversion, and any external codebase being onboarded into the CDO platform.
 ---
@@ -10,6 +10,72 @@ description: Use when migrating an existing standalone repo, script, or Databric
 Converts a standalone repo or legacy script into a first-class monorepo app under `apps/`. Done when: code lives in the correct structure, `docs/data-architecture.md` reflects the app, all pre-CI gates pass, and an ADR exists.
 
 **Not this skill:** Greenfield app with no existing code — use `docs/runbooks/create-a-new-project.md`.
+
+---
+
+## Phase 0 — Discovery & Mapping (HUMAN REVIEW REQUIRED)
+
+Before touching any files, scan the legacy source and produce a mapping report. **Do not scaffold until the human confirms the mapping is correct.**
+
+### Step 1: Scan the legacy source
+
+Inspect the legacy repo/directory and collect:
+
+| Item | What to look for |
+|---|---|
+| Entry points | `.py` files with `if __name__ == "__main__"`, notebook cells, job scripts |
+| Business logic | Functions, classes, transforms — anything not orchestration |
+| Hardcoded tables | Strings matching `catalog.schema.table`, `dbfs:/`, `abfss://` |
+| Hardcoded secrets | API keys, passwords, tokens, connection strings in source |
+| Cross-team imports | `from apps.<other_team>` or relative imports outside the package |
+| Existing tests | Any `test_*.py` or `*_test.py` files |
+| Schedules | Cron expressions, trigger conditions, dependencies on other jobs |
+| Config / env vars | `os.environ`, `.env` files, hardcoded environment names |
+
+### Step 2: Display PRE-STATE → POST-STATE mapping
+
+Print this table for human review before proceeding:
+
+```
+PRE-STATE (legacy)                        POST-STATE (monorepo)
+─────────────────────────────────────────────────────────────────────
+Source files
+  <legacy_path>/run.py               →  notebooks/run.py  [SHIM ONLY]
+  <legacy_path>/utils/transform.py   →  src/<pkg>/transform.py
+  <legacy_path>/config.py            →  REMOVE — values go to bundle.yml vars
+
+Hardcoded tables (need substitution)
+  prod_catalog.finance.orders        →  ${var.catalog}.bronze.orders
+  prod_catalog.finance.recon_out     →  ${var.catalog}.gold.recon_daily
+
+Secrets detected                     →  MUST rotate before deploy
+  DB_PASSWORD in config.py           →  ${secrets.scope.db_password}
+
+Cross-team imports detected
+  from apps.infra_common import X    →  move to libs/ or read via Delta
+
+Tests found
+  0 test files                       →  [!!] MUST write >=1 unit test
+
+Registry updates required
+  pyproject.toml                     →  ADD workspace member
+  CODEOWNERS                         →  ADD /apps/<name>/ @cdo/<team>
+  docs/data-architecture.md          →  REGENERATE after AGENTS.md filled
+─────────────────────────────────────────────────────────────────────
+Proposed app name : <team>-<verb>-<noun>
+Owner team        : @cdo/<team>
+```
+
+### Step 3: STOP — wait for human confirmation
+
+**Do not proceed until the human explicitly confirms:**
+- Proposed app name is correct
+- File mappings are correct
+- Table name substitutions are correct
+- Secrets are acknowledged (team will rotate them)
+- No unexpected cross-team imports remain
+
+Only continue to Phase 1 after receiving explicit approval.
 
 ---
 
@@ -150,6 +216,7 @@ Migrate to `apps/<name>` as a Databricks Asset Bundle.
 
 ## Phase 6 — Pre-CI Checks (run locally, must all pass)
 
+### Automated checks
 ```bash
 make lint P=apps/<name>            # ruff + mypy
 make test P=apps/<name>            # pytest (>=1 unit test required)
@@ -157,6 +224,32 @@ make bundle-validate P=apps/<name> # DAB YAML — no Databricks connection neede
 pre-commit run --all-files         # boundaries, agentsmd-lint, ownership-sync
 make check-data-map                # architecture doc is current
 make affected                      # confirms CI scope picks up the new app
+```
+
+### Additional validation (must be clean before MR)
+
+**Secrets scan** — no plaintext credentials anywhere in the app:
+```bash
+grep -rn "password\|api_key\|secret\|token" apps/<name>/src/ --include="*.py"
+# Every match must either be a variable name or a ${secrets.*} reference
+```
+
+**Hardcoded catalog/schema scan** — all table refs must use variables:
+```bash
+grep -rn "prod_catalog\|dev_catalog\|cdo_dev\.\|cdo_prod\." apps/<name>/src/ --include="*.py"
+# Any match = hardcoded; replace with ${var.catalog} in bundle.yml
+```
+
+**Business logic in notebooks check** — notebooks must be thin shims:
+```bash
+wc -l apps/<name>/notebooks/*.py
+# Any notebook over 20 lines is a red flag — extract logic to src/
+```
+
+**Test coverage gate:**
+```bash
+make test-cov P=apps/<name>
+# Must report >=80% coverage across src/<package>/
 ```
 
 Fix any failure before opening an MR. CI runs the same checks — fail here, not in the pipeline.
@@ -186,10 +279,15 @@ All checks must pass or be explained in the MR.
 
 MR will not pass without:
 
+- [ ] Phase 0 mapping reviewed and confirmed by a human
 - [ ] `make lint` passes (ruff, mypy)
 - [ ] `make test` passes (>=1 unit test)
+- [ ] `make test-cov` passes (>=80% coverage)
 - [ ] `make bundle-validate` passes
 - [ ] `pre-commit run --all-files` passes
+- [ ] Secrets scan clean (no plaintext credentials)
+- [ ] Hardcoded catalog/schema scan clean
+- [ ] No notebook over 20 lines
 - [ ] `docs/data-architecture.md` updated and committed
 - [ ] `CODEOWNERS` entry covers the new app directory
 - [ ] `AGENTS.md` has Inputs and Outputs sections
@@ -204,6 +302,7 @@ MR will not pass without:
 
 | Mistake | Fix |
 |---|---|
+| Skipped Phase 0 mapping review | Human must confirm the file/table mapping before any files are written |
 | Business logic in notebook | Extract to `src/<package>/job.py` — notebook is 4 lines |
 | Skipped `pyproject.toml` workspace entry | App invisible to `uv sync`; add to `members` |
 | Empty Inputs/Outputs in AGENTS.md | `make data-map` produces no row; fill them in first |
@@ -213,3 +312,4 @@ MR will not pass without:
 | No `run_as:` in staging/prod targets | Passes dev deploy, fails staging — add service principal |
 | Hardcoded catalog or schema string | Use `${var.catalog}` in `bundle.yml`, pass via notebook widget |
 | ADR skipped | Required for all migrations — SOC2 audit evidence |
+| Secrets left in source | Rotate immediately and use `${secrets.scope.key}` references |
