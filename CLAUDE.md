@@ -50,3 +50,40 @@ Skip agents for simple tasks (single-file edits, running commands, docs updates)
 1. `make lint P=<path> && make test P=<path>` must pass
 2. `code-reviewer` agent approves (no CRITICAL/HIGH issues)
 3. For infra: `security-reviewer` must approve
+
+## Git push rules (MANDATORY — apply before every push)
+
+**Never push directly to `main` or any `release/*` branch.** Always use a branch + MR.
+
+### Which branch to create
+
+| Situation | Branch format | Target MR |
+|-----------|--------------|-----------|
+| Normal feature / fix / chore | `feature/<team-prefix>-<short-desc>` | `main` |
+| Emergency prod fix | `hotfix/<ticket-id>` branched off active `release/*` | that `release/*` branch |
+| Release cut (release manager only) | `release/YYYY-MM-DD` from `main` | n/a — CI validates, then manual deploy |
+
+Team prefix = the prefix used in `apps/<team>-*` (e.g. `finance`, `supplier`, `infra`, `platform`).
+
+### Flow for feature work
+
+```bash
+git checkout main && git pull
+git checkout -b feature/<team>-<short-desc>
+# ... make changes, commit ...
+git push -u origin feature/<team>-<short-desc>
+# Open MR targeting main
+```
+
+### Flow for a hotfix
+
+```bash
+git checkout release/YYYY-MM-DD   # the active release branch
+git checkout -b hotfix/CHG-XXXXX
+# ... fix, commit ...
+git push -u origin hotfix/CHG-XXXXX
+# Open MR targeting that release/* branch
+# After merge: cherry-pick the fix back to main
+```
+
+Full details: `docs/runbooks/branching-strategy.md`
