@@ -15,6 +15,33 @@ libs/<name>/
 └── tests/
 ```
 
+## AGENTS.md template for each lib
+
+Every lib must have its own `AGENTS.md` with a `## Provides` section.
+This is read by `make list-libs` to surface the lib to new apps and migrations.
+
+```markdown
+# <lib-name>
+
+<One paragraph: what this library provides and why it exists.>
+
+## Owner
+@cdo/<team>
+
+## Provides
+- `<package>.<module>.<function>` — <what it does, when to use it>
+- `<package>.<module>.<class>` — <what it does, when to use it>
+
+## Consumers
+- apps/<app-name> — <why it uses this lib>
+
+## Rules
+- <constraints, e.g. "no Spark imports — pure Python only">
+- <e.g. "semver versioning — bump minor for new public functions">
+```
+
+Run `make list-libs` to see all registered libs and what they expose.
+
 ## Rules
 1. Only create a library when code is shared by 2+ apps. Inline otherwise.
 2. API changes go in a dedicated PR; consumer apps update separately.

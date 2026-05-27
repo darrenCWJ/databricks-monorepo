@@ -70,6 +70,16 @@ Ask about anything that is not explicitly stated:
 
 Before touching any files, scan the legacy source and produce a mapping report. **Do not scaffold until the human confirms the mapping is correct.**
 
+### Step 0: Show available shared libraries first
+
+> [Phase 0] About to run `make list-libs` — surfacing available shared libraries before scanning legacy code so we avoid duplicating anything already in libs/.
+
+```bash
+make list-libs
+```
+
+Review the output with the human. If any lib covers functionality in the legacy source (e.g. a `finance-common` lib with validation helpers the legacy script reimplements), note it in the mapping report. The goal is to migrate business logic into `src/` **or** replace it with a lib import — not copy-paste both.
+
 ### Step 1: Scan the legacy source
 
 Inspect the legacy repo/directory and collect:

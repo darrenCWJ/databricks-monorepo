@@ -97,11 +97,22 @@ sbt-assembly: ## Build fat JAR (P=path)
 	cd $(P) && sbt assembly
 
 # ----- scaffolding -----
+.PHONY: list-libs
+list-libs: ## Show available shared libraries and what they provide (KEYWORD=optional)
+	uv run python tools/scripts/list_libs.py $(if $(KEYWORD),--keyword $(KEYWORD),)
+
 .PHONY: new-app
 new-app: ## Scaffold new app (NAME=name, KIND=python|scala)
 ifndef NAME
 	$(error NAME is required. Usage: make new-app NAME=finance-recon KIND=python)
 endif
+	@echo ""
+	@echo "Available shared libraries (check before writing new code):"
+	@echo "-------------------------------------------------------------"
+	uv run python tools/scripts/list_libs.py
+	@echo "-------------------------------------------------------------"
+	@echo "Proceeding with scaffold for: $(NAME)"
+	@echo ""
 	uv run python tools/scripts/scaffold.py app --name $(NAME) --kind $(KIND)
 	$(MAKE) data-map
 
