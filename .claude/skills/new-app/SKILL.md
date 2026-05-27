@@ -34,20 +34,55 @@ Before taking any action, state what you are about to do and why:
 
 ## Pre-Flight — Clarify Before Anything (MANDATORY FIRST STEP)
 
-Ask every unclear item in **one message**. Do not drip-feed questions.
-Do not proceed until every item is resolved.
+Present all questions in **one message** using the format below.
+For each item, show a recommended option and numbered alternatives.
+User can reply with a number, type a custom value, or say "skip" for optional items.
+Do not proceed until all required items (marked *) are resolved.
 
-| Item | Ask if not explicitly given |
-|---|---|
-| **App name** | "What should the app be called? Convention: `<team>-<verb>-<noun>` (e.g. `finance-payment-recon`). Does `<suggested>` look right?" |
-| **Team / owner** | "Which team owns this app? (e.g. `@cdo/finance-team`)" |
-| **Goal** | "In 1–2 sentences: what problem does this app solve and who benefits?" |
-| **What it reads** | "Which tables or sources does it read from? (catalog.schema.table format)" |
-| **What it writes** | "Which tables does it produce? (catalog.schema.table format)" |
-| **Schedule** | "When does it run? (cron, triggered by upstream job, or on-demand)" |
-| **Language** | "Python or Scala?" |
-| **Key business rules** | "Any invariants, SLAs, or constraints? (e.g. 'never backfill > 30 days', '99.9% completeness SLA')" |
-| **Claude context needed?** | "Should we create an app-level CLAUDE.md so Claude understands this app's domain rules when helping with future development?" |
+---
+
+**Quick setup — reply with a number or type your own:**
+
+**1. App name*** — `<team>-<verb>-<noun>`
+> Suggested: `<inferred-from-context>` — confirm or type a new name.
+> Format: team prefix + what it does (e.g. `finance-payment-recon`, `infra-data-sync`)
+
+**2. Owner team***
+> 1. `@cdo/finance-team` _(recommended based on name prefix)_
+> 2. `@cdo/platform-team`
+> 3. `@cdo/supplier-team`
+> 4. `@cdo/infra-team`
+> 5. Other — type team name
+
+**3. What does this app do?*** _(1–2 sentences is enough)_
+> e.g. "Reconciles daily payment transactions against bank statements and flags discrepancies."
+
+**4. Inputs*** — tables/sources this app reads
+> e.g. `cdo_dev.landing.payments` — or type "unknown" to fill in later
+
+**5. Outputs*** — tables this app produces
+> e.g. `cdo_dev.gold.payment_recon` — or type "unknown" to fill in later
+
+**6. Schedule***
+> 1. Daily at 02:00 SGT _(recommended)_
+> 2. Hourly
+> 3. Triggered by upstream job — type job name
+> 4. On-demand only
+> 5. Other — type cron expression
+
+**7. Language***
+> 1. Python _(recommended)_
+> 2. Scala
+
+**8. Business rules** _(optional — press Enter or type "none" to skip)_
+> e.g. "Never backfill > 30 days", "99.9% completeness SLA by 06:00 SGT"
+
+**9. Claude context** _(optional)_
+> Create an app-level `CLAUDE.md` with domain rules for future Claude sessions?
+> 1. Yes — create CLAUDE.md _(recommended for complex domain apps)_
+> 2. No
+
+---
 
 If any answer introduces new uncertainty, ask again before moving on.
 
