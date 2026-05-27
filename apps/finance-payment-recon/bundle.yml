@@ -1,0 +1,55 @@
+bundle:
+  name: finance-payment-recon
+
+variables:
+  catalog:
+    description: Unity Catalog to use for this target
+  workspace_host:
+    description: Databricks workspace URL
+  sp_name:
+    description: Service principal name for staging/prod runs
+
+resources:
+  jobs:
+    finance_payment_recon_daily:
+      name: finance-payment-recon-${bundle.target}
+      tags: { bundle: finance-payment-recon }
+      schedule:
+        quartz_cron_expression: "0 0 18 * * ?"
+        timezone_id: UTC
+      tasks:
+        - task_key: api_ingest
+          notebook_task:
+            notebook_path: ./notebooks/01_api_ingest.py
+            base_parameters: { catalog: "${var.catalog}" }
+
+        - task_key: reconcile
+          depends_on:
+            - task_key: api_ingest
+          notebook_task:
+            notebook_path: ./notebooks/02_reconcile.py
+            base_parameters: { catalog: "${var.catalog}" }
+
+targets:
+  dev:
+    default: true
+    workspace:
+      host: ${var.workspace_host}
+    variables:
+      catalog: cdo_dev
+
+  staging:
+    workspace:
+      host: ${var.workspace_host}
+    variables:
+      catalog: cdo_staging
+    run_as:
+      service_principal_name: ${var.sp_name}
+
+  prod:
+    workspace:
+      host: ${var.workspace_host}
+    variables:
+      catalog: cdo_prod
+    run_as:
+      service_principal_name: ${var.sp_name}
