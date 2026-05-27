@@ -5,6 +5,7 @@ Unity Catalog grants to CSV for governance review.
 Usage:
     uv run python tools/scripts/dump_access.py --target prod --out reviews/
 """
+
 from __future__ import annotations
 
 import argparse
