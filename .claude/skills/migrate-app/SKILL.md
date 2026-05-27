@@ -13,6 +13,29 @@ Converts a standalone repo or legacy script into a first-class monorepo app unde
 
 ---
 
+## Pre-Flight — Clarify Before Any Action (MANDATORY FIRST STEP)
+
+**Before scanning, scaffolding, or touching any file**, surface every uncertainty and resolve it with the human. Do not guess or assume defaults.
+
+Ask about anything that is not explicitly stated:
+
+| Item | Ask if not explicitly provided |
+|---|---|
+| **App name** | "What should the app be named? Convention is `<team>-<verb>-<noun>` (e.g. `finance-payment-recon`). Does `<suggested-name>` look right?" |
+| **Team / owner** | "Which team owns this app? (e.g. `@cdo/finance-team`)" |
+| **Language** | "Is this Python or Scala?" |
+| **Legacy source path** | "Where is the legacy code? Please confirm the exact path or repo URL." |
+| **Target catalog** | "What catalog should this write to in dev/staging/prod?" |
+| **Schedule** | "What schedule should this run on, or is it triggered by another job?" |
+| **Shadow run needed?** | "Does this replace a live production job? If yes, Phase 7 shadow run is required." |
+
+**Rules:**
+- Ask all unclear questions in a single message — do not drip-feed one question at a time.
+- Do not proceed to Phase 0 until every item above is resolved.
+- If the human's answer introduces new uncertainty, ask again before moving on.
+
+---
+
 ## Phase 0 — Discovery & Mapping (HUMAN REVIEW REQUIRED)
 
 Before touching any files, scan the legacy source and produce a mapping report. **Do not scaffold until the human confirms the mapping is correct.**
@@ -279,6 +302,7 @@ All checks must pass or be explained in the MR.
 
 MR will not pass without:
 
+- [ ] Pre-Flight questions answered (name, team, source path, catalog, schedule confirmed)
 - [ ] Phase 0 mapping reviewed and confirmed by a human
 - [ ] `make lint` passes (ruff, mypy)
 - [ ] `make test` passes (>=1 unit test)
@@ -302,6 +326,7 @@ MR will not pass without:
 
 | Mistake | Fix |
 |---|---|
+| Skipped Pre-Flight questions | Agent assumed the app name, team, or source path — ask first, act second |
 | Skipped Phase 0 mapping review | Human must confirm the file/table mapping before any files are written |
 | Business logic in notebook | Extract to `src/<package>/job.py` — notebook is 4 lines |
 | Skipped `pyproject.toml` workspace entry | App invisible to `uv sync`; add to `members` |
