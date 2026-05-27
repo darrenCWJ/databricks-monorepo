@@ -183,79 +183,112 @@ def build_report() -> HealthReport:
 
 # ── Formatters ────────────────────────────────────────────────────────────────
 
+OK = "[OK]"
+ERR = "[!!]"
 
-def icon(ok: bool) -> str:
-    return "[OK]" if ok else "[!!]"
+
+def cell(ok: bool) -> str:
+    return OK if ok else ERR
+
+
+def row_has_issue(f: FolderStatus) -> bool:
+    return (
+        not f.exists
+        or not f.in_codeowners
+        or (f.path.startswith("apps/") and not f.in_data_arch)
+        or (f.exists and not f.has_agents_md)
+    )
+
+
+def _table_row(*cells: str, widths: list[int]) -> str:
+    parts = [f" {c:<{w}} " for c, w in zip(cells, widths)]
+    return "|" + "|".join(parts) + "|"
+
+
+def _table_divider(widths: list[int], edge: str = "+", fill: str = "-") -> str:
+    parts = [fill * (w + 2) for w in widths]
+    return edge + edge.join(parts) + edge
 
 
 def print_report(report: HealthReport) -> int:
     from datetime import date
 
-    SEP = "=" * 62
-    DIV = "-" * 62
+    SEP = "=" * 70
+    total = len(report.folders)
+    stale = len(report.stale_codeowners) + len(report.stale_data_arch)
+    issues = sum(1 for f in report.folders if row_has_issue(f))
+    status = "PASS" if issues == 0 and stale == 0 else "NEEDS ATTENTION"
+
     print(f"\n{SEP}")
     print(f"  Platform Health Report -- {date.today()}")
-    print(f"{SEP}\n")
+    print(SEP)
 
-    # Group by top-level dir
+    # ── Overview table ────────────────────────────────────────────────────────
+    print("\n  OVERVIEW\n")
+    ow = [9, 7, 9, 7]  # col widths: Section, Total, Healthy, Issues
+    print("  " + _table_divider(ow))
+    print("  " + _table_row("Section", "Total", "Healthy", "Issues", widths=ow))
+    print("  " + _table_divider(ow))
     for top in SCAN_DIRS:
         rows = [f for f in report.folders if f.path.startswith(top + "/")]
-        print(DIV)
-        print(f"  {top.upper()}/")
-        print(DIV)
+        healthy = sum(1 for f in rows if not row_has_issue(f))
+        top_issues = len(rows) - healthy
+        print("  " + _table_row(
+            f"{top}/", str(len(rows)), str(healthy), str(top_issues), widths=ow
+        ))
+    print("  " + _table_divider(ow))
+    total_healthy = sum(1 for f in report.folders if not row_has_issue(f))
+    print("  " + _table_row("TOTAL", str(total), str(total_healthy), str(issues), widths=ow))
+    print("  " + _table_divider(ow))
 
-        if not rows:
-            print("  (no folders)\n")
-            continue
-
-        header = f"  {'Folder':<32} {'Disk':^4} {'CODEOWNERS':^10} {'Data-Arch':^9} {'AGENTS.md':^9}"
-        print(header)
-        print(f"  {'-'*58}")
-
-        for row in rows:
-            name = row.path.split("/", 1)[1]
-            print(
-                f"  {name:<32} {icon(row.exists):^4}  "
-                f"{icon(row.in_codeowners):^10}  "
-                f"{icon(row.in_data_arch):^9}  "
-                f"{icon(row.has_agents_md):^9}"
-            )
-        print()
-
-    # Stale entries
-    if report.stale_codeowners:
-        print(DIV)
-        print("  CODEOWNERS -- specific entries pointing to missing folders:")
-        print(DIV)
-        for s in report.stale_codeowners:
-            print(f"  [!!]  /{s.entry}")
-        print()
-
-    if report.stale_data_arch:
-        print(DIV)
-        print("  data-architecture.md -- entries pointing to missing folders:")
-        print(DIV)
-        for s in report.stale_data_arch:
-            print(f"  [!!]  {s.entry}")
-        print()
-
-    # Summary
-    total = len(report.folders)
-    issues = sum(
-        1
-        for f in report.folders
-        if not f.exists or not f.in_codeowners or (
-            f.path.startswith("apps/") and not f.in_data_arch
-        ) or (f.exists and not f.has_agents_md)
+    # ── Detail table ──────────────────────────────────────────────────────────
+    print("\n  DETAIL\n")
+    # Compute dynamic folder column width
+    max_folder = max((len(f.path) for f in report.folders), default=20)
+    fw = max(max_folder, 20)
+    dw = [fw, 6, 12, 11, 11]  # Folder, Disk, CODEOWNERS, Data-Arch, AGENTS.md
+    divider = "  " + _table_divider(dw)
+    header = "  " + _table_row(
+        "Folder", "Disk", "CODEOWNERS", "Data-Arch", "AGENTS.md", widths=dw
     )
-    stale = len(report.stale_codeowners) + len(report.stale_data_arch)
+    print(divider)
+    print(header)
+    print(divider)
 
-    print(SEP)
-    print(f"  Folders tracked : {total}")
-    print(f"  Issues          : {issues}")
-    print(f"  Stale entries   : {stale}")
-    status = "PASS" if issues == 0 and stale == 0 else "NEEDS ATTENTION"
-    print(f"  Status          : {status}")
+    prev_section = None
+    for f in report.folders:
+        section = f.path.split("/")[0]
+        if prev_section is not None and section != prev_section:
+            print(divider)
+        prev_section = section
+        print("  " + _table_row(
+            f.path,
+            cell(f.exists),
+            cell(f.in_codeowners),
+            cell(f.in_data_arch),
+            cell(f.has_agents_md),
+            widths=dw,
+        ))
+    print(divider)
+
+    # ── Stale entries ─────────────────────────────────────────────────────────
+    all_stale = [
+        (s.source, s.entry) for s in report.stale_codeowners + report.stale_data_arch
+    ]
+    if all_stale:
+        print(f"\n  STALE ENTRIES ({len(all_stale)})\n")
+        sw = [20, fw]
+        print("  " + _table_divider(sw))
+        print("  " + _table_row("Source", "Entry", widths=sw))
+        print("  " + _table_divider(sw))
+        for source, entry in all_stale:
+            print("  " + _table_row(source, entry, widths=sw))
+        print("  " + _table_divider(sw))
+
+    # ── Footer ────────────────────────────────────────────────────────────────
+    print(f"\n{SEP}")
+    print(f"  Folders: {total}   Healthy: {total_healthy}   Issues: {issues}   Stale: {stale}")
+    print(f"  Status : {status}")
     print(f"{SEP}\n")
 
     return 1 if (issues > 0 or stale > 0) else 0
