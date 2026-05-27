@@ -13,6 +13,36 @@ Converts a standalone repo or legacy script into a first-class monorepo app unde
 
 ---
 
+## Announce-Before-Act (applies to every phase)
+
+Before taking any action — creating a file, running a command, editing a registry file — state what you are about to do and why. Use this format:
+
+```
+> [Phase X] About to <action>: <brief reason>.
+> Example: "> [Phase 1] About to run `make new-app NAME=finance-payment-recon` — this creates the folder structure and stubs under apps/."
+```
+
+Then execute. Never take an action silently.
+
+**When to announce:**
+- Running any shell command
+- Creating or overwriting any file
+- Editing `CODEOWNERS`, `pyproject.toml`, or `docs/data-architecture.md`
+- Starting or ending a phase
+- Anything that changes state on disk or in the repo
+
+**When NOT to ask for approval before acting** (announce is enough):
+- Read-only scans (grep, ls, cat)
+- Running checks that only produce output (lint, test, bundle-validate)
+
+**When to STOP and wait for confirmation before acting:**
+- Creating any app directory or scaffold
+- Writing `AGENTS.md`, `bundle.yml`, or any source file
+- Committing or pushing to git
+- Deploying to any environment
+
+---
+
 ## Pre-Flight — Clarify Before Any Action (MANDATORY FIRST STEP)
 
 **Before scanning, scaffolding, or touching any file**, surface every uncertainty and resolve it with the human. Do not guess or assume defaults.
