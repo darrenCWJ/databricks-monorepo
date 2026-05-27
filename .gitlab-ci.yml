@@ -1,14 +1,47 @@
-# CDO platform — GitLab CI/CD.
-# Minimal pipeline: lint only until Artifactory network access is resolved.
+# CDO platform — GitLab CI/CD
+# Mirrors pre-commit so every push is gated — including pushes from Databricks
+# Git Folders where local pre-commit hooks don't fire.
+#
+# Tools run via `uvx` (fetches from public PyPI) so no Artifactory access needed.
+# Full pipeline (test, security, deploy stages) added once Artifactory is unblocked.
 
 stages:
   - lint
 
 default:
   image: ghcr.io/astral-sh/uv:python3.11-bookworm
+  before_script:
+    # pyyaml is needed by check_pii_contract.py; on public PyPI, not Artifactory
+    - pip install --quiet pyyaml
 
 lint:
   stage: lint
   script:
+    # ── Python style, imports, security, best-practices ──────────────────────
+    # Rules: E (style), F (pyflakes), I (isort), S (bandit), B (bugbear), UP (pyupgrade)
     - uvx ruff check .
     - uvx ruff format --check .
+
+    # ── Static type checking ──────────────────────────────────────────────────
+    # --ignore-missing-imports used because workspace packages aren't installed
+    # (uv sync blocked until Artifactory access is resolved)
+    - uvx mypy --config-file pyproject.toml --ignore-missing-imports apps/ libs/
+
+    # ── SQL linting for dbt models ────────────────────────────────────────────
+    - '[ -d dbt ] && uvx sqlfluff lint dbt/ --dialect databricks || true'
+
+    # ── Cross-app boundary enforcement ───────────────────────────────────────
+    # Blocks direct Python imports across team-owned app boundaries
+    - find apps -name "*.py" | xargs --no-run-if-empty python tools/scripts/check_boundaries.py
+
+    # ── AGENTS.md completeness check ─────────────────────────────────────────
+    - find . -name "AGENTS.md" | xargs --no-run-if-empty python tools/scripts/lint_agents_md.py
+
+    # ── CODEOWNERS ↔ referenced team names sync ──────────────────────────────
+    - python tools/scripts/check_ownership_sync.py
+
+    # ── PII / classification contract on dbt schema.yml + bundle contracts ───
+    - >
+      find . \( -name "schema.yml" -path "*/dbt/*"
+               -o -name "*.yml" -path "*/contracts/*" \)
+      | xargs --no-run-if-empty python tools/scripts/check_pii_contract.py
