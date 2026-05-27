@@ -5,7 +5,7 @@ Usage:
     uv run python tools/scripts/import_job.py <job_id> <target_app_dir>
 
 Example:
-    uv run python tools/scripts/import_job.py 987654321 apps/finance-payment-recon
+    uv run python tools/scripts/import_job.py 987654321 apps/my-app
 
 What it does:
 1. Calls `databricks bundle generate job --existing-job-id <id>` to dump the
@@ -203,7 +203,7 @@ def write_report(target: Path, job_id: str, flags: list[str]) -> None:
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("job_id")
-    p.add_argument("target", help="Target app directory, e.g. apps/finance-payment-recon")
+    p.add_argument("target", help="Target app directory, e.g. apps/fraud-alert-daily")
     args = p.parse_args()
 
     target = Path(args.target).resolve()

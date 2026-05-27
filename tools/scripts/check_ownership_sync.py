@@ -51,8 +51,6 @@ ALLOWED_UNREFERENCED = {
     "@cdo/data-governance",
     "@cdo/analytics-eng-platform",
     "@cdo/restricted-cleared",
-    "@cdo/customer-data",
-    "@cdo/fraud-eng",
     "@cdo/infra-team",
     "@cdo/supplier-team",
     "@cdo/finance-team",

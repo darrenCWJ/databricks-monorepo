@@ -19,7 +19,7 @@ Before taking any action — creating a file, running a command, editing a regis
 
 ```
 > [Phase X] About to <action>: <brief reason>.
-> Example: "> [Phase 1] About to run `make new-app NAME=finance-payment-recon` — this creates the folder structure and stubs under apps/."
+> Example: "> [Phase 1] About to run `make new-app NAME=fraud-alert-daily` — this creates the folder structure and stubs under apps/."
 ```
 
 Then execute. Never take an action silently.
@@ -51,7 +51,7 @@ Ask about anything that is not explicitly stated:
 
 | Item | Ask if not explicitly provided |
 |---|---|
-| **App name** | "What should the app be named? Convention is `<team>-<verb>-<noun>` (e.g. `finance-payment-recon`). Does `<suggested-name>` look right?" |
+| **App name** | "What should the app be named? Convention is `<team>-<verb>-<noun>` (e.g. `fraud-alert-daily`). Does `<suggested-name>` look right?" |
 | **Team / owner** | "Which team owns this app? (e.g. `@cdo/finance-team`)" |
 | **Language** | "Is this Python or Scala?" |
 | **Legacy source path** | "Where is the legacy code? Please confirm the exact path or repo URL." |
@@ -152,7 +152,7 @@ ls apps/ | grep <name>
 make new-app NAME=<team>-<verb>-<noun> KIND=python   # or scala
 ```
 
-Naming convention: `<team>-<verb>-<noun>` (e.g. `finance-payment-recon`).
+Naming convention: `<team>-<verb>-<noun>` (e.g. `fraud-alert-daily`).
 
 Add the new package to root `pyproject.toml` (Python only):
 ```diff

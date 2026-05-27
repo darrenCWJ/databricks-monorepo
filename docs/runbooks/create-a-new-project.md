@@ -42,7 +42,7 @@ Naming convention:
 
 | Kind | Pattern | Example |
 |---|---|---|
-| App | `apps/<team>-<verb>-<noun>` | `apps/finance-payment-recon` |
+| App | `apps/<team>-<verb>-<noun>` | `apps/fraud-alert-daily` |
 | Library | `libs/<team>-common` or `libs/common-<thing>` | `libs/finance-common` |
 | dbt project | `dbt/<team>` | `dbt/finance` |
 
@@ -57,7 +57,7 @@ Cross-team data reads are flagged during code review, not at scaffold time.
 For an app (Python):
 
 ```bash
-make new-app NAME=finance-payment-recon KIND=python
+make new-app NAME=fraud-alert-daily KIND=python
 ```
 
 For an app (Scala):
@@ -92,7 +92,7 @@ Three files at the root must know about the new project.
 [tool.uv.workspace]
 members = [
     "apps/customer360-etl",
-+   "apps/finance-payment-recon",
++   "apps/fraud-alert-daily",
     ...
     "libs/common-spark",
 +   "libs/finance-common",

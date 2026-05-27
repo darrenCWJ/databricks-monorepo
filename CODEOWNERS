@@ -11,8 +11,6 @@
 /apps/finance-*/                        @cdo/finance-team
 /apps/supplier-*/                       @cdo/supplier-team
 /apps/infra-*/                          @cdo/infra-team
-/apps/customer*/                       @cdo/customer-data
-/apps/fraud-*/                          @cdo/fraud-eng
 
 # ---- Libraries ----
 # Team-private libs — owned by the team that uses them

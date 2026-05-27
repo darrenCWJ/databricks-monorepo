@@ -66,7 +66,7 @@ You build and maintain batch/streaming pipelines that run on Databricks.
 1. **Create a new pipeline:**
    ```bash
    make new-app NAME=<team>-<verb>-<noun> KIND=python
-   # Example: make new-app NAME=finance-payment-recon KIND=python
+   # Example: make new-app NAME=fraud-alert-daily KIND=python
    ```
 
 2. **Write your logic** in `apps/<name>/src/<package>/` (not in notebooks).
@@ -249,7 +249,6 @@ You review merge requests and manage team boundaries.
 
 ```
 /apps/finance-*/    @cdo/finance-team
-/apps/fraud-*/      @cdo/fraud-eng
 /libs/common-*/     @cdo/platform-team
 ```
 

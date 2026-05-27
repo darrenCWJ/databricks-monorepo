@@ -38,7 +38,7 @@ Capture this in a `docs/migrations/<job>-import-notes.md` file — it becomes au
 ## Step 2 — Scaffold the target app
 
 ```bash
-make new-app NAME=finance-payment-recon KIND=python
+make new-app NAME=fraud-alert-daily KIND=python
 ```
 
 Add it to the workspace and CODEOWNERS:
@@ -48,13 +48,13 @@ Add it to the workspace and CODEOWNERS:
 [tool.uv.workspace]
 members = [
     ...
-+   "apps/finance-payment-recon",
++   "apps/fraud-alert-daily",
 ]
 ```
 
 ```diff
 # CODEOWNERS
-+/apps/finance-payment-recon/    @cdo/finance-team
++/apps/fraud-alert-daily/    @cdo/finance-team
 ```
 
 ```bash
@@ -64,24 +64,24 @@ make setup
 ## Step 3 — Export the job from Databricks
 
 ```bash
-make import-job JOB_ID=987654321 T=apps/finance-payment-recon
+make import-job JOB_ID=987654321 T=apps/fraud-alert-daily
 ```
 
 Under the hood this runs `tools/scripts/import_job.py`, which:
 
 1. Calls `databricks jobs get --job-id 987654321 > /tmp/raw-job.json`
-2. Calls `databricks bundle generate job --existing-job-id 987654321 --config-dir apps/finance-payment-recon/resources/jobs/ --source-dir apps/finance-payment-recon/`
-3. Pulls referenced notebooks from `/Workspace/...` paths into `apps/finance-payment-recon/notebooks/`.
+2. Calls `databricks bundle generate job --existing-job-id 987654321 --config-dir apps/fraud-alert-daily/resources/jobs/ --source-dir apps/fraud-alert-daily/`
+3. Pulls referenced notebooks from `/Workspace/...` paths into `apps/fraud-alert-daily/notebooks/`.
 4. Rewrites notebook paths in `bundle.yml` to local refs (`./notebooks/...`).
 5. Parameterises hardcoded `catalog: cdo_dev` to `catalog: ${var.catalog}`.
 6. Converts inline clusters to a single `job_clusters` block parameterised on `${var.cluster_node_type_id}` and `${var.cluster_num_workers}`.
 7. Strips the existing `job_id`, `creator_user_name`, `created_time` fields (these are workspace-managed).
 8. Adds a stub `run_as: { service_principal_name: ${var.staging_sp} }` block (commented out for dev, uncommented for staging/prod).
-9. Emits a summary report at `apps/finance-payment-recon/IMPORT_REPORT.md` flagging everything that needs human review.
+9. Emits a summary report at `apps/fraud-alert-daily/IMPORT_REPORT.md` flagging everything that needs human review.
 
 ## Step 4 — Human cleanup
 
-Open `apps/finance-payment-recon/IMPORT_REPORT.md`. Typical items it flags:
+Open `apps/fraud-alert-daily/IMPORT_REPORT.md`. Typical items it flags:
 
 - **Hardcoded paths.** Job referenced `dbfs:/mnt/legacy-bucket/...`. Switch to a Unity Catalog volume path (`/Volumes/${var.catalog}/...`).
 - **User-bound run-as.** Job ran as `analyst.jane@cdo.gov.sg`. Replace with a service principal scoped to this app.
@@ -99,7 +99,7 @@ Each flagged item should be either:
 The imported job probably has zero unit tests today. Before the MR is mergeable:
 
 - Identify the transform functions inside the notebook(s).
-- Move them into `src/finance_payment_recon/` as plain Python.
+- Move them into `src/fraud_alert_daily/` as plain Python.
 - Write `tests/test_*.py` covering the happy path and one edge case minimum.
 - The notebook becomes a thin shim: widget read + import + call.
 
@@ -108,9 +108,9 @@ This is the single biggest improvement an import brings — it converts an untes
 ## Step 6 — Validate locally
 
 ```bash
-make lint P=apps/finance-payment-recon
-make test P=apps/finance-payment-recon
-make bundle-validate P=apps/finance-payment-recon
+make lint P=apps/fraud-alert-daily
+make test P=apps/fraud-alert-daily
+make bundle-validate P=apps/fraud-alert-daily
 ```
 
 All three must pass.
@@ -137,14 +137,14 @@ base_parameters:
 The legacy Databricks Job continues writing to `silver.payment_recon`. The DAB-managed job writes to `silver.payment_recon_v2`.
 
 ```bash
-make bundle-deploy P=apps/finance-payment-recon T=dev
-make bundle-run P=apps/finance-payment-recon JOB=payment_recon_daily T=dev
+make bundle-deploy P=apps/fraud-alert-daily T=dev
+make bundle-run P=apps/fraud-alert-daily JOB=alert_daily_run T=dev
 ```
 
 ## Step 9 — Diff daily for ≥ 7 days
 
 ```bash
-make diff-outputs BUNDLE=apps/finance-payment-recon LEGACY=\
+make diff-outputs BUNDLE=apps/fraud-alert-daily LEGACY=\
   cdo_dev.silver.payment_recon \
   cdo_dev.silver.payment_recon_v2 \
   --key payment_id
@@ -173,7 +173,7 @@ Capture the migration as `docs/adr/00NN-import-payment-recon.md`:
 The migration is reversible until cut-over: the legacy job is still running and still writing the canonical table. To roll back, simply destroy the new DAB-managed job:
 
 ```bash
-make bundle-destroy P=apps/finance-payment-recon T=dev
+make bundle-destroy P=apps/fraud-alert-daily T=dev
 ```
 
 After cut-over, rollback means flipping consumers back to the legacy table (which still has historical data) and reactivating the legacy job. Plan for this taking ~30 minutes.
