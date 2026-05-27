@@ -20,7 +20,6 @@ dev = [
 [tool.uv.workspace]
 members = [
     "tools/scripts",
-    "apps/finance-payment-recon",
 ]
 
 [tool.uv.sources]

@@ -7,8 +7,8 @@
 #
 # Examples:
 #   make test                  — run all tests (P defaults to ".")
-#   make test P=apps/finance-payment-recon
-#   make bundle-deploy P=apps/finance-payment-recon T=staging
+#   make test P=apps/fraud-alert-daily
+#   make bundle-deploy P=apps/fraud-alert-daily T=staging
 
 SHELL := /bin/bash
 .SHELLFLAGS := -euc

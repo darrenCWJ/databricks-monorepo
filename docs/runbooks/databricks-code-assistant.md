@@ -100,7 +100,7 @@ the right context.
 > proposed change."
 
 > **Prompt 3.** "Without leaving this notebook, scaffold a new Python
-> DAB called `finance-payment-recon`. Open the generated bundle.yml
+> DAB called `fraud-alert-daily`. Open the generated bundle.yml
 > and confirm it has `run_as` for staging and prod targets."
 
 If all three pass cleanly, the agent is grounded in the repo. If any
