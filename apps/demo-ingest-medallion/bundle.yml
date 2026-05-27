@@ -1,0 +1,77 @@
+bundle:
+  name: demo-ingest-medallion
+
+variables:
+  catalog:
+    default: cdo_dev
+
+targets:
+  dev:
+    mode: development
+    default: true
+    variables:
+      catalog: cdo_dev
+
+  staging:
+    variables:
+      catalog: cdo_staging
+    run_as:
+      service_principal_name: ${var.staging_sp}
+
+  prod:
+    variables:
+      catalog: cdo_prod
+    run_as:
+      service_principal_name: ${var.prod_sp}
+
+resources:
+  jobs:
+    demo_medallion_daily:
+      name: demo-ingest-medallion-${bundle.target}
+      tags:
+        bundle: demo-ingest-medallion
+        layer: medallion
+
+      schedule:
+        quartz_cron_expression: "0 0 18 * * ?"   # 02:00 SGT = 18:00 UTC
+        timezone_id: UTC
+        pause_status: PAUSED   # unpause after first successful manual run
+
+      job_clusters:
+        - job_cluster_key: medallion_cluster
+          new_cluster:
+            spark_version: 14.3.x-scala2.12
+            node_type_id: ${var.cluster_node_type_id}
+            num_workers: 2
+            spark_conf:
+              spark.databricks.delta.preview.enabled: "true"
+
+      email_notifications:
+        on_failure:
+          - platform-alerts@cdo.gov.sg
+
+      tasks:
+        - task_key: bronze_ingestion
+          job_cluster_key: medallion_cluster
+          notebook_task:
+            notebook_path: ./notebooks/01_bronze_ingestion.py
+            base_parameters:
+              catalog: ${var.catalog}
+
+        - task_key: silver_processing
+          depends_on:
+            - task_key: bronze_ingestion
+          job_cluster_key: medallion_cluster
+          notebook_task:
+            notebook_path: ./notebooks/02_silver_processing.py
+            base_parameters:
+              catalog: ${var.catalog}
+
+        - task_key: gold_business_logic
+          depends_on:
+            - task_key: silver_processing
+          job_cluster_key: medallion_cluster
+          notebook_task:
+            notebook_path: ./notebooks/03_gold_business_logic.py
+            base_parameters:
+              catalog: ${var.catalog}
