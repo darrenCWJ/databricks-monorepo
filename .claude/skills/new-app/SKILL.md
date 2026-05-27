@@ -112,14 +112,36 @@ ls apps/ | grep <team-prefix>
 
 Surface any similar apps so the new one can follow established patterns.
 
-### Step 0c: Check CODEOWNERS for existing team wildcard
+### Step 0c: Show all available tables from other monorepo apps
+
+> [Phase 0] Reading docs/data-architecture.md — showing what output tables already exist in the repo that this app could read from.
+
+Read `docs/data-architecture.md` and display the full output table list:
+
+```
+AVAILABLE TABLES FROM OTHER APPS
+─────────────────────────────────────────────────────────────
+App                      Owner                  Outputs
+<app-name>               @cdo/<team>            <catalog.schema.table>
+...
+─────────────────────────────────────────────────────────────
+Ask: "Does this app need to read from any of these tables?"
+```
+
+If yes — note each cross-app dependency. It becomes an Input in AGENTS.md
+and must be declared in the Bronze tier (Phase 3) as a source.
+
+**Important:** Reading another app's output table (Delta read) is fine.
+Importing another app's Python code is blocked by pre-commit — use `libs/` instead.
+
+### Step 0d: Check CODEOWNERS for existing team wildcard
 
 ```bash
 grep "/apps/<team>-" CODEOWNERS
 ```
 
 If a wildcard already covers the new app's name, no new CODEOWNERS line is
-needed. Note the result for Phase 3.
+needed. Note the result for Phase 6.
 
 ---
 
@@ -268,11 +290,19 @@ Ask the user (all in one message):
 ```
 Bronze tier — let's design the ingest layer.
 
-1. Source type
-   1. REST API  2. CSV/Parquet file drop  3. Database (JDBC)
-   4. Kafka/streaming  5. Other — describe
+1. Source type  (can select more than one if app reads multiple sources)
+   1. REST API
+   2. CSV / Parquet file drop
+   3. Database (JDBC)
+   4. Kafka / streaming
+   5. Another monorepo app's output table  ← show list from Phase 0 Step 0c
+   6. Other — describe
 
-2. Source details
+   If option 5: show the available table list from docs/data-architecture.md
+   and ask which table(s) to read from. These are direct Delta reads —
+   no ingestion code needed, skip to Silver tier for these inputs.
+
+2. Source details  (for each non-monorepo source)
    - API: endpoint URL, HTTP method, auth type (API key / OAuth / bearer)
    - File: landing path (dbfs:/ or abfss://), format, arrival pattern
    - DB: connection alias, source table or query
@@ -281,8 +311,9 @@ Bronze tier — let's design the ingest layer.
    Paste a sample response / row, or list the fields and their types.
    e.g.  payment_id: string, amount: float, currency: string, ts: timestamp
 
-4. Bronze table name
+4. Bronze table name  (for each external source being ingested)
    Recommended: `<catalog>.bronze.<pkg_name>`  — confirm or change
+   Note: cross-app reads from option 5 do not need a bronze table.
 
 5. Write mode
    1. Append + partition by ingestion_date  (recommended for most sources)
@@ -294,17 +325,20 @@ Bronze tier — let's design the ingest layer.
 ```
 BRONZE DESIGN
 ─────────────────────────────────────────────────────────────
-Source : <type> — <endpoint / path>
-Table  : <catalog>.bronze.<name>
-Mode   : <append partitioned by ingestion_date | full-refresh>
+External sources (ingested):
+  Source : <type> — <endpoint / path>
+  Table  : <catalog>.bronze.<name>
+  Mode   : <append partitioned by ingestion_date | full-refresh>
+  Fields from source:
+    <field>   <type>   — as-is from source
+    ...
+  Added by ingest:
+    ingestion_date   date     — run date
+    _source          string   — source identifier
 
-Fields from source:
-  <field>   <type>   — as-is from source
-  ...
-
-Added by ingest:
-  ingestion_date   date     — run date
-  _source          string   — source identifier
+Cross-app reads (direct Delta, no ingest needed):
+  <catalog.schema.table>   owned by <app-name> (@cdo/<team>)
+  ...  — OR —  none
 ─────────────────────────────────────────────────────────────
 Confirm or correct before code is written.
 ```
@@ -669,6 +703,8 @@ Fix any failure before opening an MR.
 | Skipped Pre-Flight — TODOs left in AGENTS.md | Fill all stubs in Phase 2b before committing |
 | Skipped Design Review — scaffold ran before approval | Always show the design table and wait for confirmation |
 | Smoke test instead of meaningful unit test | Test real behaviour — assert outputs, not just "it ran" |
+| Skipped Phase 0 cross-app table scan | User may not know what tables already exist — always show the list before asking about sources |
+| Importing another app's Python code | Blocked by pre-commit — use `libs/` for shared code, Delta reads for shared data |
 | Skipped Bronze design review — wrote code before confirming schema | Show the design table and wait; source fields change often |
 | Silver quality rules not documented | Rules are contractual — write them in AGENTS.md Rules section |
 | Gold metrics not confirmed before writing | Business requirements change; confirm the exact aggregations first |
