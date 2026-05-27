@@ -110,19 +110,19 @@ def generate_data_architecture(repo_root: Path) -> str:
     if len(projects) > 1:
         producers = sorted(app_names)
         has_internal_deps = any(
-            extract_source_app(inp) in app_names
-            for p in projects
-            for inp in p["inputs"]
+            extract_source_app(inp) in app_names for p in projects for inp in p["inputs"]
         )
 
         if has_internal_deps:
-            lines.extend([
-                "",
-                "## Cross-Project Read Matrix",
-                "",
-                "Apps in this repo only. A dot means the row reads from the column.",
-                "",
-            ])
+            lines.extend(
+                [
+                    "",
+                    "## Cross-Project Read Matrix",
+                    "",
+                    "Apps in this repo only. A dot means the row reads from the column.",
+                    "",
+                ]
+            )
 
             header = "| Consumer | " + " | ".join(producers) + " |"
             separator = "|----------|" + "|".join(["---"] * len(producers)) + "|"
@@ -131,22 +131,22 @@ def generate_data_architecture(repo_root: Path) -> str:
 
             for p in projects:
                 sources = {
-                    extract_source_app(inp)
-                    for inp in p["inputs"]
-                    if extract_source_app(inp)
+                    extract_source_app(inp) for inp in p["inputs"] if extract_source_app(inp)
                 }
                 cells = [" . " if prod in sources else "   " for prod in producers]
                 lines.append(f"| {p['name']} | " + "|".join(cells) + "|")
 
     # External sources not in this repo
     if external_sources:
-        lines.extend([
-            "",
-            "## External Sources",
-            "",
-            "Referenced in Inputs but not managed in `apps/`:",
-            "",
-        ])
+        lines.extend(
+            [
+                "",
+                "## External Sources",
+                "",
+                "Referenced in Inputs but not managed in `apps/`:",
+                "",
+            ]
+        )
         for source in sorted(external_sources):
             lines.append(f"- {source}")
 

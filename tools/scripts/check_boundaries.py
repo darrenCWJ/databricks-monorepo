@@ -4,6 +4,7 @@
 `apps/X` is allowed to import from `libs/*` but NOT from `apps/Y`.
 This keeps deploy units independent and ownership clean.
 """
+
 from __future__ import annotations
 
 import ast

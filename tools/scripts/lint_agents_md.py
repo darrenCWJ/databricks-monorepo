@@ -8,6 +8,7 @@ Rules:
 4. Must reference `make` for commands, not raw tool names.
 5. App AGENTS.md must have ## Inputs and ## Outputs sections.
 """
+
 from __future__ import annotations
 
 import re
@@ -26,7 +27,9 @@ def lint(path: Path) -> list[str]:
         errs.append(f"{path}: must start with `# <name>` heading")
 
     if len(lines) > MAX_LINES:
-        errs.append(f"{path}: too long ({len(lines)} > {MAX_LINES} lines) — split into subdirectories")
+        errs.append(
+            f"{path}: too long ({len(lines)} > {MAX_LINES} lines) — split into subdirectories"
+        )
 
     lower = text.lower()
     if "rules" not in lower and "public api" not in lower:
@@ -37,7 +40,7 @@ def lint(path: Path) -> list[str]:
     for line in lines:
         for f in forbidden:
             if f in line and "make " not in line and "<!-- raw-ok -->" not in line:
-                errs.append(f"{path}:{lines.index(line)+1}: prefer `make` over raw `{f}`")
+                errs.append(f"{path}:{lines.index(line) + 1}: prefer `make` over raw `{f}`")
 
     # App AGENTS.md must declare Inputs and Outputs for data-map generation.
     is_app = re.search(r"[/\\]apps[/\\][^/\\]+[/\\]AGENTS\.md$", str(path))

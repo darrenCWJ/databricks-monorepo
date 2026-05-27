@@ -18,6 +18,7 @@ What it does:
 3. Pulls referenced notebooks from the workspace into ./notebooks/.
 4. Writes IMPORT_REPORT.md flagging items that need human review.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -53,12 +54,20 @@ def generate_bundle(job_id: str, target: Path) -> Path:
     resources = target / "resources" / "jobs"
     resources.mkdir(parents=True, exist_ok=True)
     sources = target
-    run([
-        "databricks", "bundle", "generate", "job",
-        "--existing-job-id", job_id,
-        "--config-dir", str(resources),
-        "--source-dir", str(sources),
-    ])
+    run(
+        [
+            "databricks",
+            "bundle",
+            "generate",
+            "job",
+            "--existing-job-id",
+            job_id,
+            "--config-dir",
+            str(resources),
+            "--source-dir",
+            str(sources),
+        ]
+    )
     # Find the YAML file the CLI emitted (named after the job).
     yamls = list(resources.glob("*.yml")) + list(resources.glob("*.yaml"))
     if not yamls:
@@ -83,6 +92,7 @@ def rewrite_yaml(yml_path: Path, flags: list[str]) -> None:
     # 3. Convert workspace notebook paths to local ./notebooks/...
     nb_pattern = re.compile(r"notebook_path:\s*(/Workspace/[^\s]+)")
     notebooks_to_pull: list[str] = []
+
     def nb_replace(m: re.Match) -> str:
         ws_path = m.group(1)
         local_name = Path(ws_path).name
@@ -90,10 +100,11 @@ def rewrite_yaml(yml_path: Path, flags: list[str]) -> None:
             local_name += ".py"
         notebooks_to_pull.append(ws_path)
         return f"notebook_path: ./notebooks/{local_name}"
+
     text = nb_pattern.sub(nb_replace, text)
     if notebooks_to_pull:
         flags.append(
-            f"Notebook paths rewritten to local ./notebooks/. Pull required for: "
+            "Notebook paths rewritten to local ./notebooks/. Pull required for: "
             + ", ".join(notebooks_to_pull)
         )
 
@@ -124,12 +135,11 @@ def rewrite_yaml(yml_path: Path, flags: list[str]) -> None:
 
 
 def pull_notebooks(raw_job: dict, target: Path, flags: list[str]) -> None:
-    """Find every workspace notebook the job references and copy it into ./notebooks/.
-    """
+    """Find every workspace notebook the job references and copy it into ./notebooks/."""
     nb_dir = target / "notebooks"
     nb_dir.mkdir(parents=True, exist_ok=True)
     paths: set[str] = set()
-    for task in (raw_job.get("settings", {}).get("tasks") or []):
+    for task in raw_job.get("settings", {}).get("tasks") or []:
         nb = task.get("notebook_task", {}).get("notebook_path")
         if nb and nb.startswith("/Workspace/"):
             paths.add(nb)
@@ -139,11 +149,17 @@ def pull_notebooks(raw_job: dict, target: Path, flags: list[str]) -> None:
             local_name += ".py"
         local = nb_dir / local_name
         try:
-            run([
-                "databricks", "workspace", "export",
-                "--format", "SOURCE",
-                ws_path, str(local),
-            ])
+            run(
+                [
+                    "databricks",
+                    "workspace",
+                    "export",
+                    "--format",
+                    "SOURCE",
+                    ws_path,
+                    str(local),
+                ]
+            )
         except subprocess.CalledProcessError as e:
             flags.append(
                 f"Could not auto-pull notebook {ws_path}: {e.stderr.strip()}. "
@@ -197,17 +213,19 @@ def main() -> int:
     flags: list[str] = []
     print(f"[1/4] Exporting raw job {args.job_id}...")
     raw = export_raw_job(args.job_id, target)
-    print(f"[2/4] Generating bundle yaml...")
+    print("[2/4] Generating bundle yaml...")
     yml = generate_bundle(args.job_id, target)
     print(f"      Wrote {yml.relative_to(target.parent.parent)}")
-    print(f"[3/4] Rewriting bundle.yml for repo conventions...")
+    print("[3/4] Rewriting bundle.yml for repo conventions...")
     rewrite_yaml(yml, flags)
     print(f"      Applied {len(flags)} substitutions")
-    print(f"[4/4] Pulling notebooks from workspace...")
+    print("[4/4] Pulling notebooks from workspace...")
     pull_notebooks(raw, target, flags)
     write_report(target, args.job_id, flags)
-    print(f"\nDone. Review {target.relative_to(target.parent.parent)}/IMPORT_REPORT.md "
-          f"and resolve each item before opening an MR.")
+    print(
+        f"\nDone. Review {target.relative_to(target.parent.parent)}/IMPORT_REPORT.md "
+        f"and resolve each item before opening an MR."
+    )
     return 0
 
 

@@ -9,6 +9,7 @@ Usage:
     uv run python tools/scripts/audit_log.py \
         --bundle customer360-etl --target prod --sha abc123
 """
+
 from __future__ import annotations
 
 import argparse
@@ -27,7 +28,7 @@ def main() -> int:
     args = parser.parse_args()
 
     record = {
-        "ts": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "ts": dt.datetime.now(dt.UTC).isoformat(),
         "bundle": args.bundle,
         "target": args.target,
         "git_sha": args.sha,

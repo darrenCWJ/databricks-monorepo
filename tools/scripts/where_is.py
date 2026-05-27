@@ -9,6 +9,7 @@ Usage:
     uv run python tools/scripts/where_is.py <model_name>
     just where-is <model_name>
 """
+
 from __future__ import annotations
 
 import json
@@ -24,10 +25,12 @@ def find_in_files(name: str) -> list[dict]:
     for sql in REPO_ROOT.glob(f"dbt/*/models/**/{name}.sql"):
         parts = sql.relative_to(REPO_ROOT).parts
         project = parts[1] if len(parts) > 1 else None
-        hits.append({
-            "project": project,
-            "path": str(sql.relative_to(REPO_ROOT)),
-        })
+        hits.append(
+            {
+                "project": project,
+                "path": str(sql.relative_to(REPO_ROOT)),
+            }
+        )
     return hits
 
 
@@ -44,18 +47,22 @@ def find_in_manifest(name: str) -> list[dict]:
         for node_id, node in nodes.items():
             if node.get("name") != name:
                 continue
-            out.append({
-                "node_id": node_id,
-                "project": node.get("package_name"),
-                "path": node.get("path"),
-                "access": node.get("access"),
-                "materialized": (node.get("config") or {}).get("materialized"),
-                "contract_enforced": ((node.get("config") or {}).get("contract") or {}).get("enforced"),
-                "meta_classification": (node.get("meta") or {}).get("classification"),
-                "meta_pii": (node.get("meta") or {}).get("pii"),
-                "depends_on": (node.get("depends_on") or {}).get("nodes", []),
-                "consumed_by": child_map.get(node_id, []),
-            })
+            out.append(
+                {
+                    "node_id": node_id,
+                    "project": node.get("package_name"),
+                    "path": node.get("path"),
+                    "access": node.get("access"),
+                    "materialized": (node.get("config") or {}).get("materialized"),
+                    "contract_enforced": ((node.get("config") or {}).get("contract") or {}).get(
+                        "enforced"
+                    ),
+                    "meta_classification": (node.get("meta") or {}).get("classification"),
+                    "meta_pii": (node.get("meta") or {}).get("pii"),
+                    "depends_on": (node.get("depends_on") or {}).get("nodes", []),
+                    "consumed_by": child_map.get(node_id, []),
+                }
+            )
     return out
 
 
@@ -91,7 +98,10 @@ def main() -> int:
     }
     if not result["file_hits"] and not result["manifest_hits"]:
         print(f"No dbt model named '{name}' found in this repo.", file=sys.stderr)
-        print("Tip: run `dbt parse` inside the suspected project for manifest-level search.", file=sys.stderr)
+        print(
+            "Tip: run `dbt parse` inside the suspected project for manifest-level search.",
+            file=sys.stderr,
+        )
         return 1
     print(json.dumps(result, indent=2))
     return 0

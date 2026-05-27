@@ -14,6 +14,7 @@ Restricted (or Confidential) columns must ALSO declare:
 Tables containing any Restricted PK or join key SHOULD declare a row filter
 in config.row_filter (warned, not blocked — opt-in for sensitive aggregates).
 """
+
 from __future__ import annotations
 
 import sys
@@ -22,8 +23,8 @@ from pathlib import Path
 import yaml
 
 VALID_CLASS = {"Official-Open", "Official-Closed", "Restricted", "Confidential"}
-VALID_SENS  = {"Sensitive-Normal", "Sensitive-High", "NA"}
-NEEDS_MASK  = {"Restricted", "Confidential"}
+VALID_SENS = {"Sensitive-Normal", "Sensitive-High", "NA"}
+NEEDS_MASK = {"Restricted", "Confidential"}
 
 
 def check_file(path: Path) -> tuple[list[str], list[str]]:
@@ -38,7 +39,7 @@ def check_file(path: Path) -> tuple[list[str], list[str]]:
     for model in doc.get("models", []) or []:
         model_name = model.get("name", "<unnamed>")
         has_restricted_col = False
-        has_row_filter = bool(((model.get("config") or {}).get("row_filter")))
+        has_row_filter = bool((model.get("config") or {}).get("row_filter"))
         for col in model.get("columns", []) or []:
             meta = col.get("meta") or {}
             col_name = col.get("name", "<unnamed>")

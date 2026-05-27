@@ -14,25 +14,27 @@ Output: JSON to stdout with:
         "global_changes": false  # true if root config touched -> run everything
     }
 """
+
 from __future__ import annotations
 
 import json
 import subprocess
 import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 GLOBAL_FILES = {
-    "pyproject.toml", "uv.lock", "databricks.yml", "justfile",
+    "pyproject.toml",
+    "uv.lock",
+    "databricks.yml",
+    "justfile",
     ".pre-commit-config.yaml",
 }
 
 
 def changed_files(base: str = "origin/main") -> list[str]:
-    out = subprocess.check_output(
-        ["git", "diff", "--name-only", f"{base}...HEAD"], cwd=REPO_ROOT
-    )
+    out = subprocess.check_output(["git", "diff", "--name-only", f"{base}...HEAD"], cwd=REPO_ROOT)
     return out.decode().splitlines()
 
 
