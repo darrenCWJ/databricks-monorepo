@@ -23,7 +23,7 @@ def parse_agents_md(path: Path) -> dict:
 
     result = {
         "name": "",
-        "folder": str(path.parent.relative_to(path.parent.parent.parent)),
+        "folder": path.parent.relative_to(path.parent.parent.parent).as_posix(),
         "owner": "",
         "inputs": [],
         "outputs": [],
