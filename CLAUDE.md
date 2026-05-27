@@ -55,7 +55,22 @@ Skip agents for simple tasks (single-file edits, running commands, docs updates)
 
 **Never push directly to `main` or any `release/*` branch.** Always use a branch + MR.
 
-### Which branch to create
+### Step 1 — check what already exists (always do this first)
+
+```bash
+git branch --show-current          # are we already on a feature branch?
+git branch -r | grep feature/      # list all remote feature branches
+git branch -r | grep hotfix/       # list all remote hotfix branches
+```
+
+**Decision tree:**
+1. If already on a `feature/*` or `hotfix/*` branch → **use it, do not create a new one**.
+2. If on `main` and a remote `feature/*` branch exists that matches the current work → `git checkout` that branch and push to it.
+3. Only create a new branch if no suitable one exists.
+
+**Ask the user before creating a new branch** if there are existing `feature/*` branches that might be relevant — show the list and confirm which to use.
+
+### Step 2 — which branch format to use (only if creating new)
 
 | Situation | Branch format | Target MR |
 |-----------|--------------|-----------|
@@ -68,11 +83,18 @@ Team prefix = the prefix used in `apps/<team>-*` (e.g. `finance`, `supplier`, `i
 ### Flow for feature work
 
 ```bash
+# Check first
+git branch --show-current
+git branch -r | grep feature/
+
+# Re-use existing branch if relevant
+git checkout feature/<team>-<existing-desc>
+git push
+
+# Or create new only if nothing fits
 git checkout main && git pull
 git checkout -b feature/<team>-<short-desc>
-# ... make changes, commit ...
 git push -u origin feature/<team>-<short-desc>
-# Open MR targeting main
 ```
 
 ### Flow for a hotfix
