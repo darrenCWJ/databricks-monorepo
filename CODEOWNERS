@@ -13,8 +13,6 @@
 /apps/infra-*/                          @cdo/infra-team
 /apps/customer*/                       @cdo/customer-data
 /apps/fraud-*/                          @cdo/fraud-eng
-/apps/pdpa-*/                           @cdo/data-governance @cdo/platform-team
-/apps/demo-*/                           @cdo/platform-team
 
 # ---- Libraries ----
 # Team-private libs — owned by the team that uses them

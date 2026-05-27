@@ -20,7 +20,6 @@ dev = [
 [tool.uv.workspace]
 members = [
     "tools/scripts",
-    "apps/demo-ingest-medallion",
 ]
 
 [tool.uv.sources]
