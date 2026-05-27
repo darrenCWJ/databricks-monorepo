@@ -142,6 +142,10 @@ data-map: ## Regenerate docs/data-architecture.md from AGENTS.md files
 check-data-map: ## Verify data-architecture.md is up to date (CI)
 	uv run python tools/scripts/gen_data_map.py --check
 
+.PHONY: platform-health
+platform-health: ## Cross-reference CODEOWNERS, data-architecture.md, and disk (manager report)
+	uv run python tools/scripts/check_platform_health.py
+
 # ----- migration helpers -----
 .PHONY: diff-outputs
 diff-outputs: ## Compare bundle vs legacy output (BUNDLE=path, LEGACY=path)
