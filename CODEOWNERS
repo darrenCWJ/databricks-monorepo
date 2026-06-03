@@ -1,0 +1,4 @@
+# cdo-platform CODEOWNERS — GitLab syntax
+# All files require approval from the following users.
+
+*                                       @wei_hao_tan @jeffrey_siew
