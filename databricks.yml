@@ -1,0 +1,65 @@
+# Root Databricks Asset Bundle for cdo-platform.
+# GCC tenant (Government Commercial Cloud, AWS Singapore).
+# Region: ap-southeast-1. Max data classification: IM8 Restricted.
+bundle:
+  name: cdo-platform
+
+include:
+  - apps/*/bundle.yml
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      # GCC tenant Databricks endpoint — confirm with platform-team
+      host: https://dev-cdo.gcc.databricks.com
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: cdo_dev
+      region: ap-southeast-1
+      gcc_tenant: gcc-aws-dev
+      max_classification: Restricted
+      schedule_pause_status: PAUSED
+      cluster_node_type_id: i3.xlarge
+      cluster_num_workers: 2
+
+  staging:
+    mode: production
+    workspace:
+      host: https://staging-cdo.gcc.databricks.com
+      root_path: /Workspace/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      service_principal_name: ${var.staging_sp}
+    variables:
+      catalog: cdo_staging
+      region: ap-southeast-1
+      gcc_tenant: gcc-aws-staging
+      max_classification: Restricted
+      schedule_pause_status: UNPAUSED
+      cluster_node_type_id: i3.2xlarge
+      cluster_num_workers: 4
+
+  prod:
+    mode: production
+    workspace:
+      host: https://prod-cdo.gcc.databricks.com
+      root_path: /Workspace/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      service_principal_name: ${var.prod_sp}
+    variables:
+      catalog: cdo_prod
+      region: ap-southeast-1
+      gcc_tenant: gcc-aws-prod
+      max_classification: Restricted
+      schedule_pause_status: UNPAUSED
+      cluster_node_type_id: i3.4xlarge
+      cluster_num_workers: 8
+
+variables:
+  staging_sp:
+    description: Service principal for staging deploys (GCC tenant)
+    default: "00000000-0000-0000-0000-000000000000"
+  prod_sp:
+    description: Service principal for prod deploys (GCC tenant)
+    default: "00000000-0000-0000-0000-000000000000"
