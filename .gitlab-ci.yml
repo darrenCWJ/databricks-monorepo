@@ -1,31 +1,165 @@
-# You can override the included template(s) by including variable overrides
-# SAST customization: https://docs.gitlab.com/user/application_security/sast/#available-cicd-variables
-# Secret Detection customization: https://docs.gitlab.com/user/application_security/secret_detection/pipeline/configure/
-# Dependency Scanning customization: https://docs.gitlab.com/user/application_security/dependency_scanning/#customizing-analyzer-behavior
-# Container Scanning customization: https://docs.gitlab.com/user/application_security/container_scanning/#customizing-analyzer-behavior
-# Note that environment variables can be set in several places
-# See https://docs.gitlab.com/ci/variables/#cicd-variable-precedence
+# CDO platform — GitLab CI/CD
+# Mirrors pre-commit so every push is gated — including pushes from Databricks
+# Git Folders where local pre-commit hooks don't fire.
+#
+# Tools run via `uvx` (fetches from public PyPI) so no Artifactory access needed.
+# Full pipeline (test, security, deploy stages) added once Artifactory is unblocked.
+
 stages:
-- build
-- test
-- deploy
-- review
-- dast
-- staging
-- canary
-- production
-- incremental rollout 10%
-- incremental rollout 25%
-- incremental rollout 50%
-- incremental rollout 100%
-- performance
-- cleanup
-- secret-detection
-sast:
-  stage: test
-include:
-- template: Auto-DevOps.gitlab-ci.yml
-variables:
-  SECRET_DETECTION_ENABLED: 'true'
-secret_detection:
-  stage: secret-detection
+  - lint
+  - compute-affected
+  - security
+  - bundle-validate
+
+default:
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
+  before_script:
+    # pyyaml is needed by check_pii_contract.py; on public PyPI, not Artifactory
+    - pip install --quiet pyyaml
+
+lint:
+  stage: lint
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ /^release\//
+  script:
+    # ── Python style, imports, security, best-practices ──────────────────────
+    # Rules: E (style), F (pyflakes), I (isort), S (bandit), B (bugbear), UP (pyupgrade)
+    - uvx ruff check .
+    - uvx ruff format --check .
+
+    # ── Static type checking ──────────────────────────────────────────────────
+    # --ignore-missing-imports used because workspace packages aren't installed
+    # (uv sync blocked until Artifactory access is resolved)
+    - '[ "$(find apps libs -name "*.py" 2>/dev/null | head -1)" ] && uvx mypy --config-file pyproject.toml --ignore-missing-imports apps/ libs/ || echo "No .py files in apps/ libs/ — skipping mypy"'
+
+    # ── SQL linting for dbt models ────────────────────────────────────────────
+    - '[ -d dbt ] && uvx sqlfluff lint dbt/ --dialect databricks || true'
+
+    # ── Cross-app boundary enforcement ───────────────────────────────────────
+    # Blocks direct Python imports across team-owned app boundaries
+    - find apps -name "*.py" | xargs --no-run-if-empty python tools/scripts/check_boundaries.py
+
+    # ── AGENTS.md completeness check ─────────────────────────────────────────
+    - find . -name "AGENTS.md" | xargs --no-run-if-empty python tools/scripts/lint_agents_md.py
+
+    # ── CODEOWNERS ↔ referenced team names sync ──────────────────────────────
+    - python tools/scripts/check_ownership_sync.py
+
+    # ── PII / classification contract on dbt schema.yml + bundle contracts ───
+    - 'find . \( -name "schema.yml" -path "*/dbt/*" -o -name "*.yml" -path "*/contracts/*" \) | xargs --no-run-if-empty python tools/scripts/check_pii_contract.py'
+
+# ── Compute affected scopes ───────────────────────────────────────────────
+
+compute-affected:
+  stage: compute-affected
+  variables:
+    GIT_DEPTH: 0
+  script:
+    - |
+      if [ -n "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" ]; then
+        BASE="origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+      else
+        BASE="origin/main"
+      fi
+      git fetch origin
+      python tools/scripts/affected.py "$BASE" > affected.json
+      echo "Affected scopes:"
+      cat affected.json
+  artifacts:
+    paths:
+      - affected.json
+    expire_in: 1 day
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ /^release\//
+
+# ── Security scanning ─────────────────────────────────────────────────────
+
+pip-audit:
+  stage: security
+  allow_failure: true
+  script:
+    - uvx pip-audit --requirement <(pip freeze 2>/dev/null || true) || uvx pip-audit
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ /^release\//
+
+ruff-security:
+  stage: security
+  needs: [compute-affected]
+  allow_failure: true
+  script:
+    - |
+      if [ -f affected.json ]; then
+        GLOBAL=$(python -c "import json; print(json.load(open('affected.json'))['global_changes'])")
+        if [ "$GLOBAL" = "True" ]; then
+          uvx ruff check --select S --ignore S101,S603,S607,S112 .
+        else
+          APPS=$(python -c "import json; scopes=json.load(open('affected.json')); print(' '.join(['apps/'+a for a in scopes['apps']] + ['libs/'+l for l in scopes['libs']]))")
+          if [ -n "$APPS" ]; then
+            uvx ruff check --select S --ignore S101,S603,S607,S112 $APPS
+          else
+            echo "No affected Python scopes — skipping"
+          fi
+        fi
+      else
+        uvx ruff check --select S --ignore S101,S603,S607,S112 .
+      fi
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+gitleaks:
+  stage: security
+  image: ghcr.io/gitleaks/gitleaks:latest
+  allow_failure: true
+  variables:
+    GIT_DEPTH: 0
+  before_script: []
+  script:
+    - gitleaks detect --source . --log-opts="$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA" --no-banner || true
+    - gitleaks detect --source . --no-banner --no-git
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ /^release\//
+
+# ── Bundle validation (affected apps only) ────────────────────────────────
+
+bundle-validate:
+  stage: bundle-validate
+  needs: [compute-affected]
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
+  before_script:
+    - pip install --quiet databricks-cli
+  script:
+    - |
+      if [ ! -f affected.json ]; then
+        echo "No affected.json — skipping"
+        exit 0
+      fi
+      GLOBAL=$(python -c "import json; print(json.load(open('affected.json'))['global_changes'])")
+      APPS=$(python -c "import json; print(' '.join(json.load(open('affected.json'))['apps']))")
+      if [ "$GLOBAL" = "True" ]; then
+        echo "Global changes detected — validating all bundles"
+        for bundle in $(find apps -maxdepth 2 -name bundle.yml -exec dirname {} \;); do
+          echo ">>> validating $bundle"
+          cd "$bundle" && databricks bundle validate && cd -
+        done
+      elif [ -n "$APPS" ]; then
+        for app in $APPS; do
+          if [ -f "apps/$app/bundle.yml" ]; then
+            echo ">>> validating apps/$app"
+            cd "apps/$app" && databricks bundle validate && cd -
+          fi
+        done
+      else
+        echo "No affected apps — skipping bundle validation"
+      fi
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

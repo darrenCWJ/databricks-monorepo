@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# uv
+.venv/
+
+# Databricks
+.databricks/
+.dbcli/
+*.dab-state
+
+# dbt
+dbt/*/target/
+dbt/*/dbt_packages/
+dbt/*/logs/
+.dbt-state/
+
+# Scala / sbt
+target/
+project/target/
+project/project/
+.bsp/
+.bloop/
+.metals/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Secrets - just in case
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
