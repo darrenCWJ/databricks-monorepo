@@ -16,6 +16,7 @@ stages:
   - tf-validate
   - tf-plan
   - tf-apply
+  
 
 default:
   image: ghcr.io/astral-sh/uv:python3.11-bookworm
