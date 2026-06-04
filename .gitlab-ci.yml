@@ -5,11 +5,17 @@
 # Tools run via `uvx` (fetches from public PyPI) so no Artifactory access needed.
 # Full pipeline (test, security, deploy stages) added once Artifactory is unblocked.
 
+include:
+  - local: infra/infra_ci.yml
+
 stages:
   - lint
   - compute-affected
   - security
   - bundle-validate
+  - tf-validate
+  - tf-plan
+  - tf-apply
 
 default:
   image: ghcr.io/astral-sh/uv:python3.11-bookworm
