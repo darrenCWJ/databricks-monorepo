@@ -39,6 +39,7 @@ variables:
     - aws s3 cp s3://sst-s3-gvt-sdp-databricks-internet-workspace/terraform/vars/terraform.tfvars ./terraform.tfvars
     - terraform -version
     - terraform init -input=false
+    
 
 tf-validate:
   extends: .terraform_base
