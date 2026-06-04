@@ -43,6 +43,21 @@ resource "aws_iam_policy" "gitlab_ci_terraform" {
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "S3OpsAccess"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket",
+          "s3:GetBucketLocation",
+          "s3:DeleteObject",
+        ]
+        Resource = [
+          "arn:aws:s3:::sst-s3-gvt-sdp-databricks-internet-workspace",
+          "arn:aws:s3:::sst-s3-gvt-sdp-databricks-internet-workspace/*",
+        ]
+      },
+      {
         Sid    = "S3BucketManagement"
         Effect = "Allow"
         Action = [
