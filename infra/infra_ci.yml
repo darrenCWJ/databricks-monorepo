@@ -35,7 +35,8 @@ variables:
     - echo $GITLAB_OIDC_TOKEN > $AWS_WEB_IDENTITY_TOKEN_FILE
     - TF_VERSION="1.10.5"
     - curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" -o /tmp/terraform.zip
-    - unzip -o /tmp/terraform.zip -d /usr/local/bin terraform
+    - unzip -o /tmp/terraform.zip -d /tmp terraform
+    - export PATH="/tmp:$PATH"
     - terraform -version
     - cd ${TF_ROOT}
     - aws s3 cp s3://sst-s3-gvt-sdp-databricks-internet-workspace/terraform/vars/terraform.tfvars ./terraform.tfvars
