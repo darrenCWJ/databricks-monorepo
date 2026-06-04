@@ -1,5 +1,6 @@
 terraform {
-  # TODO:   change the backend to store the state to a s3 bucket, with native state locking
+  required_version = ">= 1.10.0"
+
   backend "s3" {
     bucket = "sst-s3-gvt-sdp-databricks-internet-workspace"
     key    = "terraform/state/terraform.tfstate"
