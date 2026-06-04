@@ -33,7 +33,7 @@ variables:
       aud: $CI_SERVER_URL
   before_script:
     - echo $GITLAB_OIDC_TOKEN > $AWS_WEB_IDENTITY_TOKEN_FILE
-    - cat $AWS_WEB_IDENTITY_TOKEN_FILE | cut -d. -f2 | base64 -d 2>/dev/null | jq . #debug - delete once confirmed
+    - cat $AWS_WEB_IDENTITY_TOKEN_FILE | cut -d. -f2 | awk '{n=length($0)%4; if(n==2) $0=$0"=="; else if(n==3) $0=$0"="; print}' | base64 -d | jq . #debug - delete once confirmed
     - cd ${TF_ROOT}
     - aws s3 cp s3://sst-s3-gvt-sdp-databricks-internet-workspace/terraform/vars/terraform.tfvars ./terraform.tfvars
     - terraform -version
