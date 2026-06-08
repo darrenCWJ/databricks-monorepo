@@ -1,0 +1,46 @@
+{
+    "email_notifications": {},
+    "format": "MULTI_TASK",
+    "git_source": {
+        "git_url": "{{ GIT_URL }}",
+        "git_provider": "gitLab",
+        "git_branch": "{{ GIT_BRANCH }}"
+    },
+    "max_concurrent_runs": 1,
+    "name": "test-toolbox-auto",
+    "tasks": [
+      {
+          "task_key": "autoloader_unit_test",
+          "notebook_task": {
+              "notebook_path": "tests/test_autoloader",
+              "source": "GIT",
+              "base_parameters": {
+                "ENV": "{{ ENV }}"
+              }
+          },
+          "existing_cluster_id": "{{ CLUSTER_ID }}"
+      },
+      {
+          "task_key": "data_vault_unit_test",
+          "notebook_task": {
+              "notebook_path": "tests/test_data_vault",
+              "source": "GIT",
+              "base_parameters": {
+                "ENV": "{{ ENV }}"
+              }
+          },
+          "existing_cluster_id": "{{ CLUSTER_ID }}"
+      },
+      {
+          "task_key": "kimball_unit_test",
+          "notebook_task": {
+              "notebook_path": "tests/test_kimball",
+              "source": "GIT",
+              "base_parameters": {
+                "ENV": "{{ ENV }}"
+              }
+          },
+          "existing_cluster_id": "{{ CLUSTER_ID }}"
+      }
+    ]
+}

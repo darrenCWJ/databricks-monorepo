@@ -1,0 +1,25 @@
+{
+    "email_notifications": {},
+    "git_source": {
+        "git_url": "{{ GIT_URL }}",
+        "git_provider": "gitLab",
+        "git_branch": "{{ GIT_BRANCH }}"
+    },
+    "max_concurrent_runs": 1,
+    "tasks": [
+        {
+            "task_key": "onboarding_resources",
+            "notebook_task": {
+                "notebook_path": "setup/onboarding_main",
+                "source": "GIT",
+                "base_parameters": {
+                    "ENV": "{{ ENV }}",
+                    "VOLUME_SCHEMA": "bronze",
+                    "VOLUME_NAME": "test1, test2"
+                }
+            },
+          "existing_cluster_id": "{{ CLUSTER_ID }}"
+        }
+    ],
+    "run_name": "onboarding_unit_test"
+}

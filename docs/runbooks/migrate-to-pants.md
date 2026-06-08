@@ -21,7 +21,7 @@ If none of these are true, stay on uv + Makefile + `affected.py`.
 
 About 95% of the repository:
 
-- Folder taxonomy (`apps/`, `libs/`, `dbt/`, `infra/`, `tools/`, `docs/`)
+- Folder taxonomy (`projects/`, `libs/`, `dbt/`, `infra/`, `tools/`, `docs/`)
 - All `AGENTS.md` content except the "command surface" section
 - `CODEOWNERS`
 - All `bundle.yml` files (DABs are deploy units, not build units)
@@ -88,15 +88,15 @@ POOF
 
 Goal: green test run for every `libs/<name>/`.
 
-### Phase 2 — apps/ Python (weeks 3-4)
+### Phase 2 — projects/ Python (weeks 3-4)
 
 Per-team rollout. Recommend one team per week to keep MR review load
 sane.
 
 ```bash
-./pants tailor apps/finance-*::
-./pants test apps/finance-*::
-./pants package apps/finance-*::    # builds the wheel
+./pants tailor projects/finance-*::
+./pants test projects/finance-*::
+./pants package projects/finance-*::    # builds the wheel
 ```
 
 Once a team's apps pass: update their `bundle.yml` to reference the
@@ -123,9 +123,9 @@ version_for_resolve = { jvm-default = "2.12.18" }
 For each Scala app:
 
 ```bash
-./pants tailor apps/fraud-streaming::
-./pants test apps/fraud-streaming::
-./pants package apps/fraud-streaming::deploy_jar
+./pants tailor projects/fraud-streaming::
+./pants test projects/fraud-streaming::
+./pants package projects/fraud-streaming::deploy_jar
 ```
 
 The generated `BUILD` files declare `scala_sources`, `scalatest_tests`,
@@ -195,7 +195,7 @@ libs, docs/. Review with each team lead.
 - Turn off the parallel-run CI job from Phase 0
 - Delete `uv.lock` if migrating fully to Pants resolves
 - Delete `pyproject.toml` `[tool.uv.workspace]` section
-- Delete every `apps/*/pyproject.toml` `[build-system]` block (Pants
+- Delete every `projects/*/pyproject.toml` `[build-system]` block (Pants
   produces the wheels now)
 
 ### Phase 8 — remote cache (week 10)

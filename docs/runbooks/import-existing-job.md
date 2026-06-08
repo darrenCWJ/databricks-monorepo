@@ -12,13 +12,13 @@ End-to-end time: 1–3 days for a medium job, including the 7-day shadow run.
 |---|---|
 | Existing Databricks Job already running in a workspace | **import-existing-job.md** (this) |
 | Legacy ETL script that doesn't yet run on Databricks | `docs/runbooks/migrate-a-script.md` |
-| Greenfield pipeline | `make new-app NAME=NAME KIND=python` — no runbook needed |
+| Greenfield pipeline | `make new-project DOMAIN=DOMAIN FUNCTION=FUNCTION NAME=NAME` — no runbook needed |
 
 ## Prerequisites
 
 - The job ID of the existing Databricks Job. Find it in the workspace URL: `/jobs/987654321/...` → ID is `987654321`.
 - `databricks` CLI authenticated against the source workspace.
-- Decided on the target app name and owning team. Naming: `apps/<team>-<verb>`.
+- Decided on the target app name and owning team. Naming: `projects/<domain>/<function>-<verb>`.
 - An entry in your migration tracker (`docs/migrations/INDEX.md`).
 
 ## Step 1 — Inspect the existing job
@@ -38,7 +38,7 @@ Capture this in a `docs/migrations/<job>-import-notes.md` file — it becomes au
 ## Step 2 — Scaffold the target app
 
 ```bash
-make new-app NAME=fraud-alert-daily KIND=python
+make new-project DOMAIN=fraud FUNCTION=pipeline NAME=alert-daily KIND=python
 ```
 
 Add it to the workspace and CODEOWNERS:
@@ -48,13 +48,13 @@ Add it to the workspace and CODEOWNERS:
 [tool.uv.workspace]
 members = [
     ...
-+   "apps/fraud-alert-daily",
++   "projects/fraud-alert-daily",
 ]
 ```
 
 ```diff
 # CODEOWNERS
-+/apps/fraud-alert-daily/    @wei_hao_tan @jeffrey_siew
++/projects/fraud-alert-daily/    @wei_hao_tan @jeffrey_siew
 ```
 
 ```bash
@@ -64,29 +64,29 @@ make setup
 ## Step 3 — Export the job from Databricks
 
 ```bash
-make import-job JOB_ID=987654321 T=apps/fraud-alert-daily
+make import-job JOB_ID=987654321 T=projects/fraud-alert-daily
 ```
 
 Under the hood this runs `tools/scripts/import_job.py`, which:
 
 1. Calls `databricks jobs get --job-id 987654321 > /tmp/raw-job.json`
-2. Calls `databricks bundle generate job --existing-job-id 987654321 --config-dir apps/fraud-alert-daily/resources/jobs/ --source-dir apps/fraud-alert-daily/`
-3. Pulls referenced notebooks from `/Workspace/...` paths into `apps/fraud-alert-daily/notebooks/`.
+2. Calls `databricks bundle generate job --existing-job-id 987654321 --config-dir projects/fraud-alert-daily/resources/jobs/ --source-dir projects/fraud-alert-daily/`
+3. Pulls referenced notebooks from `/Workspace/...` paths into `projects/fraud-alert-daily/notebooks/`.
 4. Rewrites notebook paths in `bundle.yml` to local refs (`./notebooks/...`).
 5. Parameterises hardcoded `catalog: cdo_dev` to `catalog: ${var.catalog}`.
 6. Converts inline clusters to a single `job_clusters` block parameterised on `${var.cluster_node_type_id}` and `${var.cluster_num_workers}`.
 7. Strips the existing `job_id`, `creator_user_name`, `created_time` fields (these are workspace-managed).
 8. Adds a stub `run_as: { service_principal_name: ${var.staging_sp} }` block (commented out for dev, uncommented for staging/prod).
-9. Emits a summary report at `apps/fraud-alert-daily/IMPORT_REPORT.md` flagging everything that needs human review.
+9. Emits a summary report at `projects/fraud-alert-daily/IMPORT_REPORT.md` flagging everything that needs human review.
 
 ## Step 4 — Human cleanup
 
-Open `apps/fraud-alert-daily/IMPORT_REPORT.md`. Typical items it flags:
+Open `projects/fraud-alert-daily/IMPORT_REPORT.md`. Typical items it flags:
 
 - **Hardcoded paths.** Job referenced `dbfs:/mnt/legacy-bucket/...`. Switch to a Unity Catalog volume path (`/Volumes/${var.catalog}/...`).
 - **User-bound run-as.** Job ran as `analyst.jane@cdo.gov.sg`. Replace with a service principal scoped to this app.
-- **Init scripts.** Job used cluster init scripts. Decide whether they should be promoted to `libraries:` PyPI/Maven deps (preferred) or kept as init scripts (committed to `apps/<name>/scripts/init/`).
-- **Workspace-only notebooks.** Job referenced `/Workspace/Repos/team/some-notebook`. Either copy the notebook into `apps/<name>/notebooks/` or reference it via a Git Folder.
+- **Init scripts.** Job used cluster init scripts. Decide whether they should be promoted to `libraries:` PyPI/Maven deps (preferred) or kept as init scripts (committed to `projects/<name>/scripts/init/`).
+- **Workspace-only notebooks.** Job referenced `/Workspace/Repos/team/some-notebook`. Either copy the notebook into `projects/<name>/notebooks/` or reference it via a Git Folder.
 - **Permissions.** Original job granted CAN_VIEW to a specific user. Replace with group-based grants.
 - **Schedule.** Original schedule was unpaused. The scaffold paused it in dev; confirm prod target unpauses.
 
@@ -108,9 +108,9 @@ This is the single biggest improvement an import brings — it converts an untes
 ## Step 6 — Validate locally
 
 ```bash
-make lint P=apps/fraud-alert-daily
-make test P=apps/fraud-alert-daily
-make bundle-validate P=apps/fraud-alert-daily
+make lint P=projects/fraud-alert-daily
+make test P=projects/fraud-alert-daily
+make bundle-validate P=projects/fraud-alert-daily
 ```
 
 All three must pass.
@@ -137,14 +137,14 @@ base_parameters:
 The legacy Databricks Job continues writing to `silver.payment_recon`. The DAB-managed job writes to `silver.payment_recon_v2`.
 
 ```bash
-make bundle-deploy P=apps/fraud-alert-daily T=dev
-make bundle-run P=apps/fraud-alert-daily JOB=alert_daily_run T=dev
+make bundle-deploy P=projects/fraud-alert-daily T=dev
+make bundle-run P=projects/fraud-alert-daily JOB=alert_daily_run T=dev
 ```
 
 ## Step 9 — Diff daily for ≥ 7 days
 
 ```bash
-make diff-outputs BUNDLE=apps/fraud-alert-daily LEGACY=\
+make diff-outputs BUNDLE=projects/fraud-alert-daily LEGACY=\
   cdo_dev.silver.payment_recon \
   cdo_dev.silver.payment_recon_v2 \
   --key payment_id
@@ -173,7 +173,7 @@ Capture the migration as `docs/adr/00NN-import-payment-recon.md`:
 The migration is reversible until cut-over: the legacy job is still running and still writing the canonical table. To roll back, simply destroy the new DAB-managed job:
 
 ```bash
-make bundle-destroy P=apps/fraud-alert-daily T=dev
+make bundle-destroy P=projects/fraud-alert-daily T=dev
 ```
 
 After cut-over, rollback means flipping consumers back to the legacy table (which still has historical data) and reactivating the legacy job. Plan for this taking ~30 minutes.
@@ -181,7 +181,7 @@ After cut-over, rollback means flipping consumers back to the legacy table (whic
 ## Common questions
 
 **Q: The job uses a JAR. Will this work?**
-Yes. `spark_jar_task` is fully supported. The JAR lives at `apps/<name>/target/scala-2.12/...assembly.jar` (Scala) and is built by `make sbt-assembly P=apps/<name>`.
+Yes. `spark_jar_task` is fully supported. The JAR lives at `projects/<name>/target/scala-2.12/...assembly.jar` (Scala) and is built by `make sbt-assembly P=projects/<name>`.
 
 **Q: The job runs every 15 minutes — is shadow-running 7 days expensive?**
 Yes — shadow-running doubles compute cost for that pipeline. For high-frequency jobs, consider a 3-day shadow with stricter diff thresholds, or shadow only during business hours. Document the deviation in the import notes.

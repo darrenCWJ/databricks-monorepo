@@ -1,11 +1,11 @@
 ---
 name: migrate-app
-description: Migrates an existing standalone repo, script, Databricks Job, or Databricks App (Streamlit, Dash, Flask, React) into the monorepo as a new app under apps/. Use when onboarding Python/Scala batch workloads, notebook-heavy jobs needing DAB conversion, or web apps onto the CDO platform.
+description: Migrates an existing standalone repo, script, Databricks Job, or Databricks App (Streamlit, Dash, Flask, React) into the monorepo as a new app under projects/. Use when onboarding Python/Scala batch workloads, notebook-heavy jobs needing DAB conversion, or web apps onto the CDO platform.
 ---
 
 # Migrate App into Monorepo
 
-Converts a standalone repo or legacy script into a first-class monorepo app under `apps/`. Done when: code lives in the correct structure, `docs/data-architecture.md` reflects the app, all pre-CI gates pass, and an ADR exists.
+Converts a standalone repo or legacy script into a first-class monorepo app under `projects/`. Done when: code lives in the correct structure, `docs/data-architecture.md` reflects the app, all pre-CI gates pass, and an ADR exists.
 
 **Not this skill:** Greenfield app with no existing code — use `docs/runbooks/create-a-new-project.md`.
 
@@ -25,7 +25,7 @@ Announce-only (no confirmation needed): read-only scans, lint/test/validate runs
 
 ---
 
-## Pre-Flight — Resolve All 8 Items Before Proceeding (MANDATORY)
+## Pre-Flight — Resolve All 9 Items Before Proceeding (MANDATORY)
 
 Before scanning or touching anything, every item below must be resolved. Extract answers already present in the user's message or clearly implied by context. Ask only about what remains genuinely unclear.
 
@@ -34,10 +34,11 @@ Present results in a single message using this format — confirmed items first,
 ```
 Pre-Flight summary
 ──────────────────
-✓ App name         : fraud-alert-daily  (from your message)
-✓ Team / owner     : @cdo/finance-team  (from your message)
+✓ Domain           : finance            (from your message)
+✓ Function type    : pipeline           (inferred: batch ETL)
+✓ Project name     : pipeline-alert-daily (from your message)
+✓ Team / owner     : @wei_hao_tan @jeffrey_siew
 ✓ Language         : Python             (inferred: .py files in source)
-✓ App type         : Databricks App — Streamlit  (from your message)
 ✓ Legacy path      : C:\demo-repo       (from your message)
 ? Target catalog   : What catalog should this write to? (cdo_dev / cdo_staging / cdo_prod)
 ? Schedule         : What schedule, or is it triggered by another job?
@@ -52,14 +53,15 @@ Rules:
 
 | # | Item | Convention / hint |
 |---|---|---|
-| 1 | **App name** | `<team>-<verb>-<noun>` e.g. `fraud-alert-daily` |
-| 2 | **Team / owner** | e.g. `@cdo/finance-team` |
-| 3 | **Language** | Python or Scala |
-| 4 | **App type** | Databricks Job (batch/streaming) or Databricks App (Streamlit/Dash/Flask/React)? |
-| 5 | **Legacy source path** | Exact path or repo URL |
-| 6 | **Target catalog** | What catalog in dev/staging/prod? |
-| 7 | **Schedule / trigger** | Cron expression, upstream job, or manual? |
-| 8 | **Shadow run needed?** | Replacing a live prod job? If yes, Phase 7 is required. |
+| 1 | **Domain** | Business domain (lowercase): `finance`, `hcm`, `infra`, etc. |
+| 2 | **Function type** | `pipeline`, `streaming`, `app`, `dashboard`, `api`, `sync`, `capture` |
+| 3 | **Project name** | `<function>-<subdomain>-<wildcard>` e.g. `pipeline-alert-daily` |
+| 4 | **Team / owner** | `@wei_hao_tan @jeffrey_siew` (default) |
+| 5 | **Language** | Python or Scala |
+| 6 | **Legacy source path** | Exact path or repo URL |
+| 7 | **Target catalog** | What catalog in dev/staging/prod? |
+| 8 | **Schedule / trigger** | Cron expression, upstream job, or manual? |
+| 9 | **Shadow run needed?** | Replacing a live prod job? If yes, Phase 7 is required. |
 
 ---
 
@@ -67,7 +69,7 @@ Rules:
 
 Do not scaffold until the human confirms the mapping is correct.
 
-### Step 0: Surface available shared libraries
+### Step 0: Surface available shared libraries (MANDATORY — before scanning legacy code)
 
 > [Phase 0] About to run `make list-libs` — checking for existing libs before scanning legacy code.
 
@@ -75,7 +77,42 @@ Do not scaffold until the human confirms the mapping is correct.
 make list-libs
 ```
 
-Note any lib covering functionality in the legacy source. Migrate to a lib import rather than copy-pasting the implementation.
+Present the libraries to the user with recommendations:
+
+```
+AVAILABLE SHARED LIBRARIES
+─────────────────────────────────────────────────────────────────
+Library          What it provides                                      Recommend?
+de_toolbox       Medallion pipeline (copper→bronze→silver→gold),       YES if ingesting/transforming data
+                 Data Vault, Kimball, DQ checks, data profiling,
+                 SharePoint/Workday connectors, email notifications
+
+de_databricks    Workspace admin: session management, IAM/SCIM,        YES if managing users, groups,
+                 Unity Catalog grants, compute provisioning,           permissions, or Databricks resources
+                 Tableau sync, housekeeping, catalog migration
+─────────────────────────────────────────────────────────────────
+```
+
+**Why use shared libraries instead of copying legacy implementations:**
+- They encode **team-validated patterns** hardened through production use
+- They handle edge cases already (environment detection, OAuth token rotation, API version switching)
+- They ensure **consistency** — all projects use the same session management, permissions logic, etc.
+- `make affected` tracks blast radius automatically when you declare the dependency
+- Re-implementing creates maintenance debt when Databricks APIs change
+
+**During legacy scan (Step 1):** flag any code that duplicates lib functionality. Replace with lib imports during migration — do not carry over reimplementations.
+
+**After migration:** Add to `pyproject.toml` dependencies for blast radius tracking:
+```toml
+dependencies = ["de-toolbox", "de-databricks"]  # only those you actually import
+```
+
+And in notebooks (per ADR-0003 src/ layout):
+```python
+import sys
+sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_toolbox/src")
+sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_databricks/src")
+```
 
 ### Step 1: Scan the legacy source
 
@@ -85,10 +122,32 @@ Note any lib covering functionality in the legacy source. Migrate to a lib impor
 | Business logic | Functions, classes, transforms — anything not orchestration |
 | Hardcoded tables | `catalog.schema.table`, `dbfs:/`, `abfss://` |
 | Hardcoded secrets | API keys, passwords, tokens, connection strings |
-| Cross-team imports | `from apps.<other_team>` or imports outside the package |
+| **External imports** | **Any `sys.path.append`, bare module import, or `from X import` that doesn't resolve to the project's own package or a pip dependency** |
+| Cross-team imports | `from projects.<other_team>` or imports outside the package |
 | Existing tests | `test_*.py` or `*_test.py` |
 | Schedules | Cron expressions, trigger conditions, upstream dependencies |
 | Config / env vars | `os.environ`, `.env` files, hardcoded environment names |
+
+### Step 1b: Resolve external imports (BLOCKER — do not proceed until resolved)
+
+For every unresolved import found in Step 1 — any `sys.path.append` to an
+external path or bare import that doesn't resolve to a pip package:
+
+1. **Ask the user:** "This code imports from `<module or path>` — which repo
+   does this come from? Is it already in our shared libs?"
+
+2. Present resolution options:
+
+   | Situation | Action |
+   |---|---|
+   | Functionality exists in `de_toolbox` or `de_databricks` | Rewrite import to use the shared lib |
+   | Code lives in another repo we own but isn't in libs yet | Flag: needs its own migration into `libs/` first (or in parallel) |
+   | Code is a pip-installable package | Add to `pyproject.toml` dependencies |
+   | Code is small project-specific glue | Inline into the project's `src/` |
+
+3. **Every import must trace to:** a shared lib under `libs/<name>/src/`, the
+   project's own `src/`, or a pip dependency in `pyproject.toml`. Nothing else
+   is acceptable in the final state.
 
 ### Step 2: Display PRE-STATE → POST-STATE mapping
 
@@ -108,17 +167,17 @@ Secrets detected                     →  MUST rotate before deploy
   DB_PASSWORD in config.py           →  ${secrets.scope.db_password}
 
 Cross-team imports detected
-  from apps.infra_common import X    →  move to libs/ or read via Delta
+  from projects.infra_common import X    →  move to libs/ or read via Delta
 
 Tests found
   0 test files                       →  [!!] MUST write >=1 unit test
 
 Registry updates required
   pyproject.toml                     →  ADD workspace member
-  CODEOWNERS                         →  ADD /apps/<name>/ @cdo/<team>
+  CODEOWNERS                         →  Already covered by wildcard (* @wei_hao_tan @jeffrey_siew)
   docs/data-architecture.md          →  REGENERATE after AGENTS.md filled
 ─────────────────────────────────────────────────────────────────────
-Proposed app name : <team>-<verb>-<noun>
+Proposed app name : <function>-<subdomain>-<wildcard>
 App type          : Job | Databricks App (<framework>)
 Owner team        : @cdo/<team>
 ```
@@ -137,14 +196,14 @@ Do not proceed until the human confirms:
 ## Phase 1 — Scaffold
 
 ```bash
-ls apps/ | grep <name>                         # confirm name is free
-make new-app NAME=<name> KIND=python           # or scala
+ls projects/<domain>/ | grep <name>               # confirm name is free
+make new-project DOMAIN=<domain> FUNCTION=pipeline NAME=<name> KIND=python           # or scala
 ```
 
 Python only — add to root `pyproject.toml`:
 ```diff
  members = [
-+    "apps/<name>",
++    "projects/<domain>/<name>",
  ]
 ```
 
@@ -177,6 +236,28 @@ Use the template in [templates/agents-md.md](templates/agents-md.md).
 
 ---
 
+## Phase 3b — Schema Contract (required if project writes output tables)
+
+Create `projects/<domain>/<name>/contracts/schema.yml` declaring all output columns:
+
+```yaml
+models:
+  - name: <catalog.schema.table>
+    columns:
+      - name: <column>
+        data_type: STRING
+        meta:
+          pii: false
+          classification: Official-Open
+          sensitivity: NA
+          retention_days: 2555
+```
+
+This enables blast radius detection. Breaking changes (column removal, type changes)
+will be blocked by pre-commit if downstream consumers reference these tables.
+
+---
+
 ## Phase 4 — Register in Three Places
 
 All three must be in the same PR as the app code.
@@ -186,11 +267,11 @@ Done in Phase 1 for Python. Skip for Scala.
 
 ### `CODEOWNERS`
 ```bash
-grep "/apps/<team>-" CODEOWNERS
+# CODEOWNERS uses a single wildcard (* @wei_hao_tan @jeffrey_siew) — no per-project entry needed
 ```
 If no wildcard exists, add a line before `# ---- Libraries ----`:
 ```
-/apps/<name>/   @cdo/<team>
+# Not needed — wildcard covers all projects
 ```
 
 ### `docs/data-architecture.md`
@@ -214,9 +295,9 @@ After each failed check: fix the specific issue, re-run that check alone, confir
 
 ### Automated checks
 ```bash
-make lint P=apps/<name>
-make test P=apps/<name>
-make bundle-validate P=apps/<name>
+make lint P=projects/<domain>/<name>
+make test P=projects/<domain>/<name>
+make bundle-validate P=projects/<domain>/<name>
 pre-commit run --all-files
 make check-data-map
 make affected
@@ -226,28 +307,28 @@ make affected
 
 **Secrets scan:**
 ```bash
-grep -rn "password\|api_key\|secret\|token" apps/<name>/src/ --include="*.py"
+grep -rn "password\|api_key\|secret\|token" projects/<domain>/<name>/src/ --include="*.py"
 # Every match must be a variable name or ${secrets.*} reference
 ```
 
 **Hardcoded catalog scan:**
 ```bash
-grep -rn "prod_catalog\|dev_catalog\|cdo_dev\.\|cdo_prod\." apps/<name>/src/ --include="*.py"
+grep -rn "prod_catalog\|dev_catalog\|cdo_dev\.\|cdo_prod\." projects/<domain>/<name>/src/ --include="*.py"
 # Any match = hardcoded; replace with ${var.catalog} in bundle.yml
 ```
 
 **Thin shim check:**
 ```bash
 # Databricks Job:
-wc -l apps/<name>/notebooks/*.py        # >20 lines = extract logic to src/
+wc -l projects/<domain>/<name>/notebooks/*.py        # >20 lines = extract logic to src/
 
 # Databricks App:
-wc -l apps/<name>/app/app.py            # >30 lines = extract logic to src/
+wc -l projects/<domain>/<name>/app/app.py            # >30 lines = extract logic to src/
 ```
 
 **Coverage gate:**
 ```bash
-make test-cov P=apps/<name>             # must report >=80%
+make test-cov P=projects/<domain>/<name>             # must report >=80%
 ```
 
 ---
@@ -255,15 +336,15 @@ make test-cov P=apps/<name>             # must report >=80%
 ## Phase 7 — Shadow Run (only if replacing a live prod job)
 
 ```bash
-make bundle-deploy P=apps/<name> T=dev
-make bundle-run P=apps/<name> JOB=<task_key> T=dev
+make bundle-deploy P=projects/<domain>/<name> T=dev
+make bundle-run P=projects/<domain>/<name> JOB=<task_key> T=dev
 ```
 
 Run for ≥7 calendar days, then validate:
 
 **Databricks Job** — compare output tables:
 ```bash
-make diff-outputs BUNDLE=apps/<name> \
+make diff-outputs BUNDLE=projects/<domain>/<name> \
   LEGACY=<catalog.schema.legacy_table> \
   --key <primary_key_column>
 ```
@@ -274,7 +355,7 @@ make diff-outputs BUNDLE=apps/<name> \
 
 ## CI Compliance Checklist
 
-- [ ] All 8 Pre-Flight questions answered
+- [ ] All 9 Pre-Flight questions answered
 - [ ] Phase 0 mapping confirmed by human
 - [ ] `make lint` passes
 - [ ] `make test` passes (≥1 unit test)
@@ -287,6 +368,8 @@ make diff-outputs BUNDLE=apps/<name> \
 - [ ] `docs/data-architecture.md` updated and committed
 - [ ] `CODEOWNERS` entry covers new app directory
 - [ ] `AGENTS.md` has Inputs and Outputs filled
+- [ ] `AGENTS.md` has `## Runtime Dependencies` if applicable
+- [ ] `contracts/schema.yml` declares all output table columns
 - [ ] ADR committed in `docs/adr/`
 - [ ] MR includes change-ticket ID (SOC2)
 - [ ] CODEOWNER approval not by author
@@ -297,7 +380,7 @@ make diff-outputs BUNDLE=apps/<name> \
 
 | Mistake | Fix |
 |---|---|
-| Skipped Pre-Flight | Ask all 8 questions first, every time |
+| Skipped Pre-Flight | Ask all 9 questions first, every time |
 | Skipped Phase 0 mapping review | Human must confirm before any files are written |
 | Wrong layout for app type | Job uses `notebooks/`; Databricks App uses `app/` |
 | Business logic in shim | Extract to `src/<package>/` |

@@ -22,8 +22,8 @@ Three questions answer it:
 | Question | Yes | No |
 |---|---|---|
 | Does this transform data that lives in Unity Catalog into a new table that other teams will read? | Add a **dbt project** (or extend an existing one) | Skip |
-| Does this ingest data from outside UC, run ML, stream, or do anything non-SQL? | Add an **app** (DAB) under `apps/` | Skip |
-| Is this code reused by 2+ apps? | Add a **library** under `libs/` | Inline it where used; promote to a lib later if needed |
+| Does this ingest data from outside UC, run ML, stream, or do anything non-SQL? | Add an **app** (DAB) under `projects/` | Skip |
+| Is this code reused by 2+ projects? | Add a **library** under `libs/` | Inline it where used; promote to a lib later if needed |
 
 Common combinations:
 
@@ -33,7 +33,7 @@ Common combinations:
 | Streaming ingestion | App only (typically Scala). No dbt. |
 | Pure SQL transforms over existing Delta tables | dbt project (or models added to an existing one) |
 | ML training pipeline | App (Python + MLflow). Reads from dbt marts. |
-| Cross-team library | Promote to `libs/` (rare — only when 2+ apps will use it) |
+| Cross-team library | Promote to `libs/` (rare — only when 2+ projects will use it) |
 | App serving low-latency OLTP reads | App + Lakebase sync (Pattern D) — see `lakebase-sync-design.md` |
 
 ## Step 1 — choose a name and confirm the owner
@@ -42,14 +42,14 @@ Naming convention:
 
 | Kind | Pattern | Example |
 |---|---|---|
-| App | `apps/<team>-<verb>-<noun>` | `apps/fraud-alert-daily` |
-| Library | `libs/<team>-common` or `libs/common-<thing>` | `libs/finance-common` |
+| App | `projects/<domain>/<function>-<subdomain>` | `projects/fraud-alert-daily` |
+| Library | `libs/<team>_common` or `libs/common_<thing>` | `libs/finance_common` |
 | dbt project | `dbt/<team>` | `dbt/finance` |
 
 Prefix is the team handle (lowercase, hyphenated). The prefix routes
 CODEOWNERS, `affected.py`, pre-commit boundary checks, and CI fan-out.
 
-Before scaffolding, check for name collision: `ls apps/ | grep <name>`.
+Before scaffolding, check for name collision: `ls projects/ | grep <name>`.
 Cross-team data reads are flagged during code review, not at scaffold time.
 
 ## Step 2 — scaffold
@@ -57,13 +57,13 @@ Cross-team data reads are flagged during code review, not at scaffold time.
 For an app (Python):
 
 ```bash
-make new-app NAME=fraud-alert-daily KIND=python
+make new-project DOMAIN=<domain> FUNCTION=pipeline NAME=fraud-alert-daily KIND=python
 ```
 
 For an app (Scala):
 
 ```bash
-make new-app NAME=fraud-streaming-v2 KIND=scala
+make new-project DOMAIN=<domain> FUNCTION=pipeline NAME=fraud-streaming-v2 KIND=scala
 ```
 
 For a library:
@@ -91,11 +91,11 @@ Three files at the root must know about the new project.
 ```diff
 [tool.uv.workspace]
 members = [
-    "apps/customer360-etl",
-+   "apps/fraud-alert-daily",
+    "projects/customer360-etl",
++   "projects/fraud-alert-daily",
     ...
-    "libs/common-spark",
-+   "libs/finance-common",
+    "libs/common_spark",
++   "libs/finance_common",
     ...
 ]
 ```
@@ -107,11 +107,11 @@ under their own toolchains (`sbt`, `dbt`).
 
 ```diff
 # Apps
-/apps/finance-*/                        @wei_hao_tan @jeffrey_siew
+/projects/finance-*/                        @wei_hao_tan @jeffrey_siew
 ```
 
 If your team prefix is already in CODEOWNERS as a wildcard
-(`/apps/finance-*/`), you don't need a new line. Just verify the wildcard
+(`/projects/finance-*/`), you don't need a new line. Just verify the wildcard
 matches your new project's name.
 
 For a brand-new team, add the team-wide rule first (see
@@ -145,9 +145,9 @@ The scaffolded `AGENTS.md` is a stub. Fill in:
 - **Rules** specific to this project (e.g., "no floats for money")
 
 Use existing apps for reference:
-- `apps/customer360-etl/AGENTS.md` — Python DAB with dbt task
-- `apps/fraud-streaming/AGENTS.md` — Scala streaming
-- `apps/pdpa-erasure/AGENTS.md` — cross-cutting service-principal job
+- `projects/customer360-etl/AGENTS.md` — Python DAB with dbt task
+- `projects/fraud-streaming/AGENTS.md` — Scala streaming
+- `projects/pdpa-erasure/AGENTS.md` — cross-cutting service-principal job
 
 Length budget: ≤ 80 lines.
 
@@ -157,12 +157,12 @@ For Python apps and libs:
 - Pure transforms in `src/<package>/transforms.py` or similar
 - Unit tests in `tests/` using `pytest`
 - Use `testing_utils.spark_fixture` for Spark
-- Run: `make test P=apps/<name>` — should run green before any deploy
+- Run: `make test P=projects/<name>` — should run green before any deploy
 
 For Scala:
 - Tests in `src/test/scala/`
 - Use ScalaTest
-- Run: `make sbt-test P=apps/<name>`
+- Run: `make sbt-test P=projects/<name>`
 
 For dbt:
 - Every model needs `not_null` on its PK
@@ -176,7 +176,7 @@ yourself there, stop and write tests for the existing scaffold first.
 
 ## Step 6 — configure deployment (apps only)
 
-Edit `apps/<name>/bundle.yml`:
+Edit `projects/<name>/bundle.yml`:
 
 - Set the job name and schedule (or `continuous: {}` for streaming)
 - Define cluster (`job_clusters` block) using the platform-team-provided
@@ -193,9 +193,9 @@ add a `synced_database_tables` resource — see
 ## Step 7 — pre-flight check locally
 
 ```bash
-make lint P=apps/<name>             # ruff + mypy + sqlfluff + scalafmt
-make test P=apps/<name>             # pytest (or sbt-test for Scala)
-make bundle-validate P=apps/<name>  # databricks bundle validate
+make lint P=projects/<name>             # ruff + mypy + sqlfluff + scalafmt
+make test P=projects/<name>             # pytest (or sbt-test for Scala)
+make bundle-validate P=projects/<name>  # databricks bundle validate
 ```
 
 All three must pass before opening an MR. If `bundle-validate` fails on a
@@ -238,7 +238,7 @@ When the MR merges to `main`, the `deploy-dev` job runs automatically:
 Watch the deploy log. Trigger the job manually first time:
 
 ```bash
-make bundle-run P=apps/<name> JOB=<task_key> T=dev
+make bundle-run P=projects/<name> JOB=<task_key> T=dev
 ```
 
 If the job fails, fix and re-MR. The dev environment is the sandbox.
@@ -275,15 +275,17 @@ ADRs are optional for routine new projects but required when the project:
 ## Checklist (the short version)
 
 - [ ] Decided the project kind (app / lib / dbt / mixed)
-- [ ] Picked a `<team>-<verb>-<noun>` name
+- [ ] Picked a `<function>-<subdomain>-<wildcard>` name
 - [ ] Confirmed owner with team lead
-- [ ] `make new-app NAME=NAME KIND=python|scala` OR `make new-lib NAME=NAME` OR manual dbt scaffold
+- [ ] `make new-project DOMAIN=<domain> FUNCTION=pipeline NAME=NAME KIND=python|scala` OR `make new-lib NAME=NAME` OR manual dbt scaffold
 - [ ] Added to `pyproject.toml` workspace members (Python)
 - [ ] Added to `CODEOWNERS` (or verified existing wildcard matches)
 - [ ] Added row(s) to `docs/data-architecture.md` (Tables 1, 2, 3)
 - [ ] Filled in `AGENTS.md` (≤80 lines)
 - [ ] Wrote at least one unit test (for non-dbt)
 - [ ] Every dbt column has `meta.*` fields (pre-commit will block otherwise)
+- [ ] `contracts/schema.yml` created for all output tables
+- [ ] `## Runtime Dependencies` filled in AGENTS.md if project calls/reads other projects
 - [ ] `make lint` / `make test` / `make bundle-validate` all pass locally
 - [ ] Opened MR with change-ticket ID
 - [ ] CI green

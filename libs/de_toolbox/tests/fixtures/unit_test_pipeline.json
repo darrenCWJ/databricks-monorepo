@@ -1,0 +1,87 @@
+{
+  "bronze": {
+    "connector": "Volume",
+    "file_format": "csv",
+    "effective_date": "LastUpdate",
+    "column_datetype": ["`Target  Hire  Date`","`Close Date`"],
+    "time_parser_policy": "LEGACY",
+    "pk" : ["`employee id`"],
+    "transform": [
+      {
+        "new_column_name": "LastUpdate",
+        "function": "to_date",
+        "args": ["LastUpdate", "dd/MM/yyyy"],
+        "kwargs": {}
+      },
+      {
+        "new_column_name": "ReportDateId",
+        "function": "date_format",
+        "args": ["LastUpdate", "yyyyMM01"],
+        "kwargs": {}
+      }
+    ],
+    "mapping" : {
+      "flg": "n",
+      "ref_table" : "",
+      "pk" : "",
+      "prefix": "",
+      "new_column" : "",
+      "condition" : ""
+    }
+  },
+  "silver": {
+    "hub": [
+      {
+        "table_name": "worker",
+        "primary_key": ["EmployeeId"],
+        "columns": ["EmployeeId"]
+      },
+      {
+        "table_name": "organization",
+        "primary_key": ["OrganizationId"],
+        "columns": ["OrganizationId"]
+      }
+    ],
+    "link": [
+      {
+        "table_name": "worker_organization",
+        "primary_key": ["EmployeeId", "OrganizationId"],
+        "foreign_key": ["EmployeeId", "OrganizationId"],
+        "columns": [
+          "EmployeeId",
+          "OrganizationId"
+        ]
+      }
+    ],
+    "satellite": [
+      {
+        "table_name": "worker_details_i",
+        "primary_key": ["EmployeeId"],
+        "columns": [
+          "EmployeeId",
+          "Age",
+          "EmployeeName"
+        ]
+      },
+      {
+        "table_name": "worker_details_ii",
+        "primary_key": ["EmployeeId"],
+        "columns": [
+          "EmployeeId",
+          "JobProfile",
+          "JobGrade",
+          "JobRole"
+        ]
+      }
+    ],
+    "datatype_remap": {
+      "EmployeeId": ["DOUBLE", "BIGINT"]
+    },
+    "column_rename": {
+      "EmployeeId": "EmployeeId"
+    }
+  },
+  "project": "toolbox",
+  "source": "UNIT.TEST",
+  "table_name": "unit_test"
+}

@@ -59,7 +59,7 @@ codes, same error messages as on a laptop. Cost: ~30-60 seconds per run.
 
 ### Option B — Pre-push job (zero developer friction)
 
-Define a Databricks Job in `apps/<team>-pre-push-validate/bundle.yml`
+Define a Databricks Job in `projects/<team>-pre-push-validate/bundle.yml`
 that runs the same checks. Require its green status in the Git Folder UI
 before allowing push. Enforced rather than voluntary. Cost: cluster
 startup (~1-2 min per check) but no engineer discipline required.

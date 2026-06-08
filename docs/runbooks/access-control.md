@@ -11,7 +11,7 @@ to verify it took effect, and how to roll back.
 
 | Layer | What it gates | Where it lives | Approver |
 |---|---|---|---|
-| L1  Workspace | Who can sign in; which SP a Job runs as | GitLab group -> SCIM sync; `apps/*/bundle.yml` `run_as:` | HR/Identity (humans); `@wei_hao_tan @jeffrey_siew` (SPs) |
+| L1  Workspace | Who can sign in; which SP a Job runs as | GitLab group -> SCIM sync; `projects/*/bundle.yml` `run_as:` | HR/Identity (humans); `@wei_hao_tan @jeffrey_siew` (SPs) |
 | L2  Grants | USE_CATALOG, SELECT, MODIFY, CREATE on UC objects | `infra/unity-catalog/main.tf` `databricks_grant` resources | `@wei_hao_tan @jeffrey_siew` + `@wei_hao_tan @jeffrey_siew` |
 | L3  Column masks | Per-column visibility (clear vs REDACTED) | `dbt/*/schema.yml` `meta.mask_function` + `infra/unity-catalog/main.tf` function defs + `dbt/*/macros/apply_masks.sql` | `@wei_hao_tan @jeffrey_siew` + `@wei_hao_tan @jeffrey_siew` |
 | L4  Row filters | Which rows a caller can see | `dbt/*/schema.yml` `config.row_filter` + `infra/unity-catalog/main.tf` filter functions + `dbt/*/macros/apply_row_filter.sql` | `@wei_hao_tan @jeffrey_siew` + `@wei_hao_tan @jeffrey_siew` |
@@ -40,7 +40,7 @@ resource "databricks_service_principal" "finance_pipelines" {
 
 Open MR. `@wei_hao_tan @jeffrey_siew` reviews. CI plans + applies on merge.
 
-In `apps/finance-*/bundle.yml`, reference the SP:
+In `projects/finance-*/bundle.yml`, reference the SP:
 
 ```yaml
 targets:
@@ -246,7 +246,7 @@ Jane now sees HR-cost-centre rows in every row-filtered table.
 ## Lakebase mirror
 
 For tables synced to Lakebase, mirror the masking/filtering at the Postgres
-layer in `apps/<name>/lakebase/views.sql`:
+layer in `projects/<name>/lakebase/views.sql`:
 
 ```sql
 -- Masked view; app service reads this, not the underlying table.
