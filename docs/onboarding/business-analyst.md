@@ -40,5 +40,5 @@ new data products. You do NOT need to clone the repo.
 
 ## Need new data?
 - Open an issue on the GitLab repo against the relevant team's neighbourhood
-  (e.g., `apps/finance-*` for Finance data)
+  (e.g., `projects/finance-*` for Finance data)
 - Describe the question, not the schema — the team will translate

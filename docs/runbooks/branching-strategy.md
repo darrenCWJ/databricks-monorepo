@@ -50,7 +50,7 @@ Format: `feature/<team-prefix>-<short-description>`
 | `feature/supplier-spend-v2` | `feature/john-tuesday` (personal naming) |
 | `feature/customer360-add-segment` | `feature/CHG-12345` (ticket as branch name; cite it in MR description instead) |
 
-The `<team-prefix>` matches the prefix used in `apps/<team>-*` and `dbt/<team>/`. Makes branch lists scannable.
+The `<team-prefix>` matches the prefix used in `projects/<domain>/<function>-*` and `dbt/<team>/`. Makes branch lists scannable.
 
 ## Opening an MR
 
@@ -83,7 +83,7 @@ For each affected app:
    tools/scripts/audit_log.py records the deploy
    ↓
 Engineer can immediately run the dev job:
-   make bundle-run P=apps/<name> JOB=<task> T=dev
+   make bundle-run P=projects/<name> JOB=<task> T=dev
 ```
 
 No human intervention. The dev environment is the sandbox; lots of merges per day are fine.
@@ -178,7 +178,7 @@ Same model. The Git Folder commits and pushes to the same GitLab repo. CI runs s
 
 ```bash
 # Look at your DAB target
-cat apps/<name>/bundle.yml | grep -A1 target
+cat projects/<name>/bundle.yml | grep -A1 target
 
 # Or via the CLI
 databricks bundle summary -t dev      # or staging, prod

@@ -12,7 +12,7 @@ Accepted
 <Why this is being migrated. What it does. Where it lived before — include the legacy repo URL or file path.>
 
 ## Decision
-Migrate to `apps/<name>` as a Databricks Asset Bundle (<Job | Databricks App>).
+Migrate to `projects/<domain>/<name>` as a Databricks Asset Bundle (<Job | Databricks App>).
 
 ## Residual risks
 - <Schema changes that downstream consumers must handle>

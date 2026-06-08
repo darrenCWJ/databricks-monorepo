@@ -1,6 +1,6 @@
 ---
 name: repo-health-check
-description: Use when a manager or engineer asks for a platform overview, ownership audit, missing registrations, stale CODEOWNERS entries, or whether all apps/libs are properly tracked. Also use before quarterly reviews or when onboarding a new team to verify repo hygiene.
+description: Use when a manager or engineer asks for a platform overview, ownership audit, missing registrations, stale CODEOWNERS entries, or whether all projects/libs are properly tracked. Also use before quarterly reviews or when onboarding a new team to verify repo hygiene.
 ---
 
 # Repo Health Check
@@ -8,7 +8,7 @@ description: Use when a manager or engineer asks for a platform overview, owners
 ## Overview
 
 Cross-references three sources of truth and surfaces gaps in a single report:
-1. **Disk** — what folders actually exist under `apps/`, `libs/`, `dbt/`
+1. **Disk** — what folders actually exist under `projects/`, `libs/`, `dbt/`
 2. **CODEOWNERS** — what folders have an owner assigned
 3. **`docs/data-architecture.md`** — what apps are registered in the catalogue
 
@@ -21,7 +21,7 @@ uv run python tools/scripts/check_platform_health.py --json   # machine-readable
 
 ## What the Report Shows
 
-For every folder under `apps/`, `libs/`, `dbt/` it checks four columns:
+For every folder under `projects/`, `libs/`, `dbt/` it checks four columns:
 
 | Column | Green (✅) means... | Red (❌) means... |
 |---|---|---|
@@ -51,8 +51,8 @@ It also flags:
   (no folders)
 
   CODEOWNERS — specific entries pointing to missing folders:
-  ❌  /libs/finance-common/
-  ❌  /libs/supplier-common/
+  ❌  /libs/finance_common/
+  ❌  /libs/supplier_common/
 
 ══════════════════════════════════════════════════════════════
   Folders tracked : 1
@@ -71,7 +71,7 @@ It also flags:
 | Issue | Fix |
 |---|---|
 | App on disk, missing from data-arch | Fill in `AGENTS.md` Inputs/Outputs, run `make data-map` |
-| App on disk, no CODEOWNERS coverage | Add `/apps/<name>/   @cdo/<team>` to CODEOWNERS |
+| App on disk, no CODEOWNERS coverage | Add `/projects/<domain>/<name>/   @cdo/<team>` to CODEOWNERS |
 | App on disk, no `AGENTS.md` | Create `AGENTS.md` with Owner, Inputs, Outputs, Schedule, Rules |
 | Stale CODEOWNERS specific entry | Remove the line (or create the folder if it should exist) |
 | Stale data-architecture row | Run `make data-map` to regenerate from current AGENTS.md files |

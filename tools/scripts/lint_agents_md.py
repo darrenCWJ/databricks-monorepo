@@ -3,7 +3,7 @@
 
 Rules:
 1. File must start with a `# <name>` heading.
-2. Must contain a "Rules" or "Public API" section (apps vs libs).
+2. Must contain a "Rules" or "Public API" section (projects vs libs).
 3. Must be <= 200 lines (progressive disclosure principle).
 4. Must reference `make` for commands, not raw tool names.
 5. App AGENTS.md must have ## Inputs and ## Outputs sections.

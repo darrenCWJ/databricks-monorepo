@@ -23,6 +23,8 @@ lint:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH =~ /^release\//
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
+    - if: $CI_COMMIT_BRANCH =~ /^hotfix\//
   script:
     # ── Python style, imports, security, best-practices ──────────────────────
     # Rules: E (style), F (pyflakes), I (isort), S (bandit), B (bugbear), UP (pyupgrade)
@@ -32,14 +34,14 @@ lint:
     # ── Static type checking ──────────────────────────────────────────────────
     # --ignore-missing-imports used because workspace packages aren't installed
     # (uv sync blocked until Artifactory access is resolved)
-    - '[ "$(find apps libs -name "*.py" 2>/dev/null | head -1)" ] && uvx mypy --config-file pyproject.toml --ignore-missing-imports apps/ libs/ || echo "No .py files in apps/ libs/ — skipping mypy"'
+    - '[ "$(find projects libs -name "*.py" 2>/dev/null | head -1)" ] && uvx mypy --config-file pyproject.toml --ignore-missing-imports projects/ libs/ || echo "No .py files in projects/ libs/ — skipping mypy"'
 
     # ── SQL linting for dbt models ────────────────────────────────────────────
     - '[ -d dbt ] && uvx sqlfluff lint dbt/ --dialect databricks || true'
 
     # ── Cross-app boundary enforcement ───────────────────────────────────────
     # Blocks direct Python imports across team-owned app boundaries
-    - find apps -name "*.py" | xargs --no-run-if-empty python tools/scripts/check_boundaries.py
+    - find projects -name "*.py" | xargs --no-run-if-empty python tools/scripts/check_boundaries.py
 
     # ── AGENTS.md completeness check ─────────────────────────────────────────
     - find . -name "AGENTS.md" | xargs --no-run-if-empty python tools/scripts/lint_agents_md.py
@@ -67,6 +69,25 @@ compute-affected:
       python tools/scripts/affected.py "$BASE" > affected.json
       echo "Affected scopes:"
       cat affected.json
+
+      # Surface lib blast radius when libs are modified
+      LIBS=$(python -c "import json; libs=json.load(open('affected.json'))['libs']; print(' '.join(libs) if libs else '')")
+      if [ -n "$LIBS" ]; then
+        echo ""
+        echo "╔═══════════════════════════════════════════════════╗"
+        echo "║         LIBRARY CHANGE — BLAST RADIUS            ║"
+        echo "╠═══════════════════════════════════════════════════╣"
+        echo "║ Modified libs: $LIBS"
+        PROJECTS=$(python -c "import json; p=json.load(open('affected.json'))['projects']; print(', '.join(p) if p else 'none')")
+        SCRIPTS=$(python -c "import json; s=json.load(open('affected.json'))['scripts_affected']; print(', '.join(s) if s else 'none')")
+        SKILLS=$(python -c "import json; s=json.load(open('affected.json'))['skills_affected']; print(', '.join(s) if s else 'none')")
+        echo "║ Affected projects: $PROJECTS"
+        echo "║ Affected scripts:  $SCRIPTS"
+        echo "║ Affected skills:   $SKILLS"
+        echo "╚═══════════════════════════════════════════════════╝"
+        echo ""
+        echo "CODEOWNERS for affected projects will be notified via MR review routing."
+      fi
   artifacts:
     paths:
       - affected.json
@@ -75,6 +96,8 @@ compute-affected:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH =~ /^release\//
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
+    - if: $CI_COMMIT_BRANCH =~ /^hotfix\//
 
 # ── Security scanning ─────────────────────────────────────────────────────
 
@@ -87,6 +110,8 @@ pip-audit:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH =~ /^release\//
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
+    - if: $CI_COMMIT_BRANCH =~ /^hotfix\//
 
 ruff-security:
   stage: security
@@ -99,7 +124,7 @@ ruff-security:
         if [ "$GLOBAL" = "True" ]; then
           uvx ruff check --select S --ignore S101,S603,S607,S112 .
         else
-          APPS=$(python -c "import json; scopes=json.load(open('affected.json')); print(' '.join(['apps/'+a for a in scopes['apps']] + ['libs/'+l for l in scopes['libs']]))")
+          APPS=$(python -c "import json; scopes=json.load(open('affected.json')); print(' '.join(['projects/'+a for a in scopes['projects']] + ['libs/'+l for l in scopes['libs']]))")
           if [ -n "$APPS" ]; then
             uvx ruff check --select S --ignore S101,S603,S607,S112 $APPS
           else
@@ -112,6 +137,8 @@ ruff-security:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
+    - if: $CI_COMMIT_BRANCH =~ /^hotfix\//
 
 gitleaks:
   stage: security
@@ -127,8 +154,10 @@ gitleaks:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH =~ /^release\//
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
+    - if: $CI_COMMIT_BRANCH =~ /^hotfix\//
 
-# ── Bundle validation (affected apps only) ────────────────────────────────
+# ── Bundle validation (affected projects only) ────────────────────────────────
 
 bundle-validate:
   stage: bundle-validate
@@ -143,23 +172,46 @@ bundle-validate:
         exit 0
       fi
       GLOBAL=$(python -c "import json; print(json.load(open('affected.json'))['global_changes'])")
-      APPS=$(python -c "import json; print(' '.join(json.load(open('affected.json'))['apps']))")
+      APPS=$(python -c "import json; print(' '.join(json.load(open('affected.json'))['projects']))")
       if [ "$GLOBAL" = "True" ]; then
         echo "Global changes detected — validating all bundles"
-        for bundle in $(find apps -maxdepth 2 -name bundle.yml -exec dirname {} \;); do
+        for bundle in $(find projects -maxdepth 3 -name bundle.yml -exec dirname {} \;); do
           echo ">>> validating $bundle"
           cd "$bundle" && databricks bundle validate && cd -
         done
       elif [ -n "$APPS" ]; then
         for app in $APPS; do
-          if [ -f "apps/$app/bundle.yml" ]; then
-            echo ">>> validating apps/$app"
-            cd "apps/$app" && databricks bundle validate && cd -
+          if [ -f "projects/$app/bundle.yml" ]; then
+            echo ">>> validating projects/$app"
+            cd "projects/$app" && databricks bundle validate && cd -
           fi
         done
       else
-        echo "No affected apps — skipping bundle validation"
+        echo "No affected projects — skipping bundle validation"
       fi
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
+    - if: $CI_COMMIT_BRANCH =~ /^hotfix\//
+
+# ── Blast radius reporting (schema-breaking + downstream deps) ────────
+
+blast-radius:
+  stage: bundle-validate
+  needs: [compute-affected]
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
+  before_script:
+    - pip install --quiet pyyaml
+  script:
+    - |
+      echo "=== Blast Radius Report ==="
+      python tools/scripts/check_schema_breaking.py --base "origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" || true
+      echo ""
+      echo "=== Full Dependency Graph ==="
+      python tools/scripts/build_dep_graph.py
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
+    - if: $CI_COMMIT_BRANCH =~ /^hotfix\//

@@ -51,7 +51,7 @@ resources:
         scheduling_policy: TRIGGERED
         primary_key_columns: [customer_id]
       # Column tags propagate from UC. Apply masking at Lakebase as a
-      # Postgres view in apps/<name>/lakebase/views.sql.
+      # Postgres view in projects/<name>/lakebase/views.sql.
 
   jobs:
     customer360_daily:
@@ -68,10 +68,10 @@ DAB schema; the shape stays the same.
 
 ## Schemas and migrations
 
-Per-app schemas live at `apps/<name>/lakebase/`:
+Per-app schemas live at `projects/<name>/lakebase/`:
 
 ```
-apps/customer360-etl/lakebase/
+projects/customer360-etl/lakebase/
 ├── schema.sql              # CREATE TABLE customer_data.customer_360 (...)
 ├── views.sql               # masked views over PII columns
 ├── migrations/             # Liquibase / sqitch / Flyway migration files
@@ -95,9 +95,9 @@ tasks:
 ## Compliance — what to check before merging
 
 - Every PII column in the source Delta table has a corresponding **masked
-  view** in `apps/<name>/lakebase/views.sql`. The application service role
+  view** in `projects/<name>/lakebase/views.sql`. The application service role
   reads the view, not the underlying synced table.
-- The `apps/pdpa-erasure/` script knows about this sync. Either:
+- The `projects/pdpa-erasure/` script knows about this sync. Either:
   (a) the synced table is in the erasure walk, or
   (b) the sync is configured to propagate deletes from Delta automatically
        (preferred — verify in the sync spec).
@@ -128,10 +128,10 @@ When the consuming app no longer needs Lakebase:
 
 | Operation | Where |
 |---|---|
-| Define a sync | `apps/<name>/bundle.yml` `synced_database_tables:` |
-| Schema DDL | `apps/<name>/lakebase/schema.sql` |
-| Masked views for PII | `apps/<name>/lakebase/views.sql` |
-| Migrations | `apps/<name>/lakebase/migrations/` |
+| Define a sync | `projects/<name>/bundle.yml` `synced_database_tables:` |
+| Schema DDL | `projects/<name>/lakebase/schema.sql` |
+| Masked views for PII | `projects/<name>/lakebase/views.sql` |
+| Migrations | `projects/<name>/lakebase/migrations/` |
 | Instance setup | `infra/lakebase/main.tf` |
 | Monitor sync lag | Databricks UI -> Lakebase -> Synced tables |
 | Audit trail | `cdo-soc2-audit-${env}` S3 bucket |

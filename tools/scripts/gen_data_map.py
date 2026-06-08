@@ -1,7 +1,7 @@
 """Generate docs/data-architecture.md from per-app AGENTS.md declarations.
 
 Reads ## Inputs, ## Outputs, ## Owner, and ## Schedule sections from each
-apps/*/AGENTS.md file and produces a cross-project dependency map.
+projects/*/*/AGENTS.md file and produces a cross-project dependency map.
 
 Usage:
     python gen_data_map.py           # Write docs/data-architecture.md
@@ -23,7 +23,7 @@ def parse_agents_md(path: Path) -> dict:
 
     result = {
         "name": "",
-        "folder": path.parent.relative_to(path.parent.parent.parent).as_posix(),
+        "folder": path.parent.relative_to(path.parent.parent.parent.parent).as_posix(),
         "owner": "",
         "inputs": [],
         "outputs": [],
@@ -67,12 +67,12 @@ def extract_source_app(input_entry: str) -> str:
 
 def generate_data_architecture(repo_root: Path) -> str:
     """Generate the full data-architecture.md content."""
-    apps_dir = repo_root / "apps"
-    if not apps_dir.exists():
-        return "# Data Architecture\n\nNo apps/ directory found.\n"
+    projects_dir = repo_root / "projects"
+    if not projects_dir.exists():
+        return "# Data Architecture\n\nNo projects/ directory found.\n"
 
     projects = []
-    for agents_md in sorted(apps_dir.glob("*/AGENTS.md")):
+    for agents_md in sorted(projects_dir.glob("*/*/AGENTS.md")):
         parsed = parse_agents_md(agents_md)
         if parsed["name"]:
             projects.append(parsed)
@@ -80,7 +80,7 @@ def generate_data_architecture(repo_root: Path) -> str:
     lines = [
         "# Data Architecture",
         "",
-        "Auto-generated from `apps/*/AGENTS.md`. Do not edit manually.",
+        "Auto-generated from `projects/*/*/AGENTS.md`. Do not edit manually.",
         "Regenerate with: `make data-map`",
         "",
         "## Project Catalogue",
@@ -106,7 +106,7 @@ def generate_data_architecture(repo_root: Path) -> str:
             if source and source not in app_names:
                 external_sources.add(source)
 
-    # Cross-project matrix: only apps that exist in apps/
+    # Cross-project matrix: only apps that exist in projects/
     if len(projects) > 1:
         producers = sorted(app_names)
         has_internal_deps = any(
@@ -143,7 +143,7 @@ def generate_data_architecture(repo_root: Path) -> str:
                 "",
                 "## External Sources",
                 "",
-                "Referenced in Inputs but not managed in `apps/`:",
+                "Referenced in Inputs but not managed in `projects/`:",
                 "",
             ]
         )

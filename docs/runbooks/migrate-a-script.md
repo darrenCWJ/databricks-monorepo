@@ -1,13 +1,13 @@
 # Runbook: migrate a single legacy script into the monorepo
 
 Use this when you have a legacy ETL/ML/streaming script that needs to live in
-`apps/`. The whole flow should take 1–3 days for a medium script.
+`projects/`. The whole flow should take 1–3 days for a medium script.
 
 ## Step 1 — scaffold
 ```bash
-make new-app NAME=my-pipeline KIND=python    # or --kind scala
+make new-project DOMAIN=<domain> FUNCTION=pipeline NAME=my-pipeline KIND=python    # or --kind scala
 ```
-This creates `apps/my-pipeline/` with `bundle.yml`, `src/`, `tests/`, `notebooks/`, and an `AGENTS.md` stub.
+This creates `projects/my-pipeline/` with `bundle.yml`, `src/`, `tests/`, `notebooks/`, and an `AGENTS.md` stub.
 
 Add the new package to root `pyproject.toml`'s `[tool.uv.workspace]` members list, then:
 ```bash
@@ -15,24 +15,24 @@ uv sync --all-packages
 ```
 
 ## Step 2 — lift
-Copy the legacy script into `apps/my-pipeline/src/my_pipeline/`.
+Copy the legacy script into `projects/my-pipeline/src/my_pipeline/`.
 Replace ad-hoc imports with `from common_spark.session import get_spark` etc.
 Move any inline business logic out of the notebook into a function in `src/`.
 
 ## Step 3 — wrap
-Create a thin notebook in `apps/my-pipeline/notebooks/run.py`:
+Create a thin notebook in `projects/my-pipeline/notebooks/run.py`:
 ```python
 dbutils.widgets.text("catalog", "cdo_dev")
 from my_pipeline.job import run
 run(dbutils.widgets.get("catalog"))
 ```
-Write a unit test in `apps/my-pipeline/tests/` that exercises the function with a small local Spark.
+Write a unit test in `projects/my-pipeline/tests/` that exercises the function with a small local Spark.
 
 ## Step 4 — shadow
 Deploy to dev alongside legacy, writing to a separate table:
 ```bash
-make bundle-deploy P=apps/my-pipeline T=dev
-make bundle-run P=apps/my-pipeline JOB=my_pipeline_daily T=dev
+make bundle-deploy P=projects/my-pipeline T=dev
+make bundle-run P=projects/my-pipeline JOB=my_pipeline_daily T=dev
 ```
 Configure `bundle.yml` so the new job writes to e.g. `silver.customer_360_v2`
 while legacy continues writing to `silver.customer_360`.
@@ -40,7 +40,7 @@ while legacy continues writing to `silver.customer_360`.
 ## Step 5 — diff
 Run for at least 7 calendar days, then:
 ```bash
-make diff-outputs BUNDLE=apps/my-pipeline LEGACY=\
+make diff-outputs BUNDLE=projects/my-pipeline LEGACY=\
   cdo_dev.legacy.customer_360 \
   cdo_dev.silver.customer_360_v2 \
   --key customer_id

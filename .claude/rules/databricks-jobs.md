@@ -2,7 +2,7 @@
 paths:
   - "**/bundle.yml"
   - "**/databricks.yml"
-  - "apps/**"
+  - "projects/**"
 ---
 # Databricks Jobs Rules
 

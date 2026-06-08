@@ -1,6 +1,6 @@
 # Data Architecture
 
-Auto-generated from `apps/*/AGENTS.md`. Do not edit manually.
+Auto-generated from `projects/*/AGENTS.md`. Do not edit manually.
 Regenerate with: `make data-map`
 
 ## Project Catalogue
