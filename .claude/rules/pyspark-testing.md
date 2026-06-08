@@ -60,7 +60,7 @@ def spark():
 ## Running Tests
 
 ```bash
-make test P=apps/<name>          # Run tests for one app
+make test P=projects/<name>          # Run tests for one app
 make test P=libs/<name>          # Run tests for one lib
 uv run pytest --cov=src --cov-report=term-missing  # With coverage
 ```

@@ -1,0 +1,45 @@
+{
+    "email_notifications":{},
+    "format": "MULTI_TASK",
+    "git_source": {
+        "git_url": "{{ GIT_URL }}",
+        "git_provider": "gitLab",
+        "git_branch": "{{ GIT_BRANCH }}"
+    },
+    "max_concurrent_runs": 1,
+    "tasks": [
+        {
+            "task_key": "main",
+            "depends_on": [{"task_key": "unit_testing"}],
+            "notebook_task": {
+                "notebook_path": "housekeep/main",
+                "source": "GIT",
+                "base_parameters": {
+                    "ENV": "{{ ENV }}",
+                    "PROJECT": "{{ PROJECT }}",
+                    "DEFAULT_DATE": "",
+                    "DEBUG": "True",
+                    "MODE": "Test"
+                }
+            },
+            "existing_cluster_id": "{{ CLUSTER_ID }}",
+            "libraries": []
+        },
+        {
+            "task_key": "unit_testing",
+            "notebook_task": {
+                "notebook_path": "tests/test_housekeep",
+                "source": "GIT",
+                "base_parameters": {
+                    "ENV": "{{ ENV }}",
+                    "PROJECT": "{{ PROJECT }}",
+                    "DEBUG": "True",
+                    "MODE": "Test"
+                }
+            },
+            "existing_cluster_id": "{{ CLUSTER_ID }}",
+            "libraries": [] 
+        }
+    ]
+} 
+

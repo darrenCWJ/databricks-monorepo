@@ -3,7 +3,7 @@
 ## Directory structure
 
 ```
-apps/<team>-<verb>-<noun>/
+projects/<domain>/<function>-<subdomain>/
 ├── AGENTS.md
 ├── bundle.yml
 ├── pyproject.toml
@@ -12,6 +12,8 @@ apps/<team>-<verb>-<noun>/
 ├── src/<package>/
 │   ├── __init__.py
 │   └── job.py         # All business logic here — unit-testable
+├── contracts/
+│   └── schema.yml     # Output table schema contract
 └── tests/
     └── test_job.py    # pytest, @pytest.mark.unit
 ```

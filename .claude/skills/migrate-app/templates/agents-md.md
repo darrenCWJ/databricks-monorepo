@@ -1,6 +1,6 @@
 # AGENTS.md Template
 
-Copy this into `apps/<name>/AGENTS.md` and fill in every placeholder. Keep under 80 lines.
+Copy this into `projects/<domain>/<name>/AGENTS.md` and fill in every placeholder. Keep under 80 lines.
 
 ```markdown
 # <app-name>
@@ -24,6 +24,11 @@ or: triggered by upstream job `<job-name>`
 - No business logic in shim files — all logic lives in src/<package>/
 - <app-specific invariant, e.g. "never backfill more than 30 days">
 - <data invariant, e.g. "use Decimal for all monetary values, never float">
+## Runtime Dependencies
+- reads: projects/<domain>/<project> (table: <catalog.schema.table>)
+- calls: projects/<domain>/<project> (endpoint: <METHOD /path>)
 ```
 
 **Filling in Inputs / Outputs is mandatory.** `make data-map` reads these sections to build the platform architecture catalogue. If either section is empty, the app will not appear in the data map and `make check-data-map` will fail in CI.
+
+**Runtime Dependencies** are required if this project calls another project's API or reads its Lakebase table at runtime. `make dep-graph` traces these edges. `make affected` flags dependents when a project changes.

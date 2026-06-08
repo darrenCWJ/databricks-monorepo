@@ -22,20 +22,13 @@ repos:
     hooks:
       - id: nbstripout
 
-  - repo: https://github.com/sqlfluff/sqlfluff
-    rev: 3.2.5
-    hooks:
-      - id: sqlfluff-lint
-        files: "^dbt/"
-        args: [--dialect=databricks]
-
   - repo: local
     hooks:
       - id: block-cross-app-imports
-        name: Block imports across apps/ boundaries
+        name: Block imports across projects/ boundaries
         entry: uv run python tools/scripts/check_boundaries.py
         language: system
-        files: "^apps/.*\\.py$"
+        files: "^projects/.*\\.py$"
         pass_filenames: true
 
       - id: agentsmd-lint
@@ -58,3 +51,10 @@ repos:
         language: system
         files: "(schema\\.yml|contracts/.*\\.yml)$"
         pass_filenames: true
+
+      - id: schema-breaking-check
+        name: Detect breaking schema changes and report downstream impact
+        entry: uv run python tools/scripts/check_schema_breaking.py --ci
+        language: system
+        files: "contracts/schema\\.yml$"
+        pass_filenames: false

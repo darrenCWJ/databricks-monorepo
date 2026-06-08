@@ -1,0 +1,60 @@
+{
+  "data": [
+    {
+      "AccountId": "A001",
+      "Resources": {
+        "AppDetails": [
+          {"AppName": "App1", "AppVersion": "1.0"},
+          {"AppName": "App2", "AppVersion": "2.0"}
+        ],
+        "MachineDetails": {
+          "MachineName": "Machine1",
+          "MachineIP": ["192.168.1.1", "192.168.1.2"],
+          "MachineOS": "Linux",
+          "Specs": {"CPU": "4 cores", "RAM": "16GB"}
+        }
+      },
+      "Metric": 100,
+      "Score": 95.5,
+      "IsActive": true,
+      "LastUpdated": "2023-01-01T12:00:00"
+    },
+    {
+      "AccountId": "A002",
+      "Resources": {
+        "AppDetails": [
+          {"AppName": "App3", "AppVersion": "1.1"},
+          {"AppName": "App4", "AppVersion": "2.1"}
+        ],
+        "MachineDetails": {
+          "MachineName": "Machine2",
+          "MachineIP": ["192.168.2.1"],
+          "MachineOS": "Windows",
+          "Specs": {"CPU": "8 cores", "RAM": "32GB"}
+        }
+      },
+      "Metric": 200,
+      "Score": 88.0,
+      "IsActive": false,
+      "LastUpdated": "2023-01-02T13:00:00"
+    },
+    {
+      "AccountId": "A003",
+      "Resources": {
+        "AppDetails": [
+          {"AppName": "App5", "AppVersion": "1.2"}
+        ],
+        "MachineDetails": {
+          "MachineName": "Machine3",
+          "MachineIP": ["192.168.3.1", "192.168.3.2", "192.168.3.3"],
+          "MachineOS": "Linux",
+          "Specs": {"CPU": "2 cores", "RAM": "8GB"}
+        }
+      },
+      "Metric": 300,
+      "Score": 99.9,
+      "IsActive": true,
+      "LastUpdated": "2023-01-03T14:00:00"
+    }
+  ]
+}

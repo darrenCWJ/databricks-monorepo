@@ -7,7 +7,7 @@ compliance, and developer productivity.
 ## Key scripts
 | Script | Purpose |
 |--------|---------|
-| `scaffold.py` | Generate new apps/libs from templates |
+| `scaffold.py` | Generate new projects/libs from templates |
 | `affected.py` | Compute which bundles a PR impacts (for CI fan-out) |
 | `audit_log.py` | Record deploys to the WORM audit bucket |
 | `check_boundaries.py` | Block cross-team imports in Python |

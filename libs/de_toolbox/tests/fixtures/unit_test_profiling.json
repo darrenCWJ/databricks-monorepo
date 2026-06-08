@@ -1,0 +1,18 @@
+{
+  "compute_all_stats_test_0": {
+    "src_table": "infra_dev.bronze.data_profiling_sample",
+    "max_depth": 0
+  },
+  "compute_all_stats_test_1": {
+    "src_table": "infra_dev.bronze.data_profiling_sample",
+    "max_depth": 1
+  },
+  "compute_all_stats_test_null": {
+    "src_table": "infra_dev.bronze.data_profiling_sample",
+    "max_depth": null
+  },
+  "data_integrity_check_test": {
+    "src_table": "infra_dev.bronze.data_profiling_sample",
+    "compute_all": false
+  }
+}

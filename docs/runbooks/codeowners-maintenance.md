@@ -24,7 +24,7 @@ When CODEOWNERS changes, other files that name teams must also change. The
 | When CODEOWNERS changes... | Also update... |
 |---|---|
 | Team renamed (@wei_hao_tan @jeffrey_siew -> @wei_hao_tan @jeffrey_siew) | Every `AGENTS.md` that names the team; `infra/unity-catalog/main.tf` group names; `databricks.yml` service-principal references; `docs/compliance/*.md` references |
-| New app prefix introduced (e.g. apps/legal-*) | Root `AGENTS.md` folder map; new prefix added to `apps/<prefix>-*` line in CODEOWNERS |
+| New app prefix introduced (e.g. projects/legal-*) | Root `AGENTS.md` folder map; new prefix added to `projects/<prefix>-*` line in CODEOWNERS |
 | Cleared-group changes | Every `dbt/**/schema.yml` reviewers re-attest (file content stays valid) |
 | New compliance reviewer team | `.gitlab/merge_request_templates/default.md` if it names reviewers |
 
@@ -35,10 +35,10 @@ this is large by design — renaming a team is a coordinated platform-level
 change, not a sneaky one.
 
 Files to edit in one MR:
-- `CODEOWNERS` (lines starting `/apps/supplier-*`, `/libs/supplier-common`,
+- `CODEOWNERS` (lines starting `/projects/supplier-*`, `/libs/supplier_common`,
   `/dbt/supplier`, `/docs/runbooks/supplier-*.md`)
-- Rename directories: `apps/supplier-*` -> `apps/procurement-*`,
-  `libs/supplier-common` -> `libs/procurement-common`,
+- Rename directories: `projects/supplier-*` -> `projects/procurement-*`,
+  `libs/supplier_common` -> `libs/procurement_common`,
   `dbt/supplier` -> `dbt/procurement`
 - `pyproject.toml` workspace members
 - `infra/unity-catalog/main.tf` group resource names
@@ -69,7 +69,7 @@ See `docs/runbooks/quarterly-access-review.md` for the full process.
 | CODEOWNERS itself | @wei_hao_tan @jeffrey_siew | The team(s) being added or removed |
 | Team's own line in CODEOWNERS | That team | @wei_hao_tan @jeffrey_siew |
 | AGENTS.md (root) | @wei_hao_tan @jeffrey_siew | None |
-| `apps/<team>-*/AGENTS.md` | The team | None |
+| `projects/<domain>/<function>-*/AGENTS.md` | The team | None |
 | `infra/unity-catalog/main.tf` (group names) | @wei_hao_tan @jeffrey_siew | @wei_hao_tan @jeffrey_siew + @wei_hao_tan @jeffrey_siew |
 | `databricks.yml` (SP variable defaults) | @wei_hao_tan @jeffrey_siew | None |
 | `.gitlab/merge_request_templates/default.md` | @wei_hao_tan @jeffrey_siew | @wei_hao_tan @jeffrey_siew |

@@ -1,0 +1,37 @@
+{
+    "schema": "gold",
+    "table": "dim_worker_profile",
+    "primary_key": "EmployeeId",
+    "domain": "HR",
+    "subdomain": "manpower",
+    "completeness":[
+        "Email",
+        "EmployeeId",
+        "EmployeeName"
+    ],
+
+    "conformity": [
+      {
+        "function":"expect_column_values_to_match_regex",
+        "expression":"'Email', '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.gov\\.sg$', meta={'Dimension':'Conformity'}"
+      }, 
+      {
+        "function":"expect_column_values_to_match_regex",
+        "expression":"'EmployeeId', '^(100[0-9]{5}|110[0-9]{5}|120[0-9]{5})$',meta={'Dimension':'Conformity'}"
+      },
+      {
+        "function":"expect_column_values_to_match_regex",
+        "expression":"'EmployeeName', '^[a-zA-Z@\\- ]+$', meta={'Dimension':'Conformity'}"
+      }
+    ],
+
+    "validity": [
+    ],
+
+    "uniqueness": [
+        "Email",
+        "EmployeeId"
+    ]
+}
+
+
