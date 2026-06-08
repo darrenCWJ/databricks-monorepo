@@ -136,12 +136,6 @@ resource "databricks_grants" "catalog_level" {
     privileges = ["ALL_PRIVILEGES"]
   }
 
-  # Terraform CI/CD SP needs USE CATALOG to read catalog state after ownership transfer
-  grant {
-    principal  = module.iam.service_principal_application_ids["sp_dev_cdo_workspace_admin"]
-    privileges = ["MANAGE", "USE_CATALOG"]
-  }
-
   grant {
     principal  = module.iam.group_names["govtech_admin"]
     privileges = ["ALL_PRIVILEGES"]
@@ -215,16 +209,22 @@ module "s3_workspace_data_bucket" {
   aws_account_id        = var.aws_account_id
   iam_role_name         = "unity-catalog-dev-workspace"
   databricks_account_id = var.databricks_account_id
+  bucket_name_override  = module.workspace.root_bucket_name
+  skip_bucket_creation  = true
   enable_kms            = true
   kms_key_arn           = aws_kms_key.s3.arn
 }
 
-
+#for storage credentials
 resource "databricks_grants" "dev_data_cred" {
   storage_credential = "dev-data-cred"
   grant {
     principal  = module.iam.group_names["govtech_admin"]
     privileges = ["CREATE_EXTERNAL_LOCATION"]
+  }
+  grant {
+    principal  = module.iam.service_principal_application_ids["sp_dev_cdo_workspace_admin"]
+    privileges = ["MANAGE"]
   }
 }
 
@@ -234,6 +234,10 @@ resource "databricks_grants" "dev_landing_cred" {
     principal  = module.iam.group_names["govtech_admin"]
     privileges = ["CREATE_EXTERNAL_LOCATION"]
   }
+  grant {
+    principal  = module.iam.service_principal_application_ids["sp_dev_cdo_workspace_admin"]
+    privileges = ["MANAGE"]
+  }
 }
 
 resource "databricks_grants" "dev_autoloader_cred" {
@@ -241,6 +245,10 @@ resource "databricks_grants" "dev_autoloader_cred" {
   grant {
     principal  = module.iam.group_names["govtech_admin"]
     privileges = ["CREATE_EXTERNAL_LOCATION"]
+  }
+  grant {
+    principal  = module.iam.service_principal_application_ids["sp_dev_cdo_workspace_admin"]
+    privileges = ["MANAGE"]
   }
 }
 

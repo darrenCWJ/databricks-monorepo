@@ -3,6 +3,18 @@ variable "aws_account_id" {
   type        = string
 }
 
+variable "bucket_name_override" {
+  description = "Override the derived bucket name. Use when the bucket was created outside this module (e.g. the workspace root bucket)."
+  type        = string
+  default     = null
+}
+
+variable "skip_bucket_creation" {
+  description = "Set to true to skip S3 bucket creation. Use when the bucket is managed elsewhere (e.g. the workspace root bucket). Requires bucket_name_override."
+  type        = bool
+  default     = false
+}
+
 variable "external_location_name" {
   description = "Name for the Unity Catalog external location. Not used when purpose = 'workspace'."
   type        = string

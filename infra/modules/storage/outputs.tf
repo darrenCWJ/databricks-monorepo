@@ -1,11 +1,11 @@
 output "bucket_name" {
   description = "Name of the S3 bucket"
-  value       = aws_s3_bucket.sdp_s3_bucket.bucket
+  value       = local.bucket_name
 }
 
 output "bucket_arn" {
   description = "ARN of the S3 bucket"
-  value       = aws_s3_bucket.sdp_s3_bucket.arn
+  value       = var.skip_bucket_creation ? "arn:aws:s3:::${local.bucket_name}" : aws_s3_bucket.sdp_s3_bucket[0].arn
 }
 
 output "iam_role_arn" {

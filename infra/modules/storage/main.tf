@@ -21,14 +21,16 @@ terraform {
 
 locals {
   is_workspace = var.purpose == "workspace"
+  bucket_name  = coalesce(var.bucket_name_override, "sst-s3-gvt-sdp-databricks-${var.env}-${var.purpose}")
 }
 
 # ── S3 bucket ────────────────────────────────────────────────────
 resource "aws_s3_bucket" "sdp_s3_bucket" {
-  bucket = "sst-s3-gvt-sdp-databricks-${var.env}-${var.purpose}"
+  count  = var.skip_bucket_creation ? 0 : 1
+  bucket = local.bucket_name
 
   tags = {
-    Name        = "sst-s3-gvt-sdp-databricks-${var.env}-${var.purpose}"
+    Name        = local.bucket_name
     Environment = var.env
     Purpose     = var.purpose
   }
@@ -44,13 +46,13 @@ resource "aws_s3_bucket" "sdp_s3_bucket" {
 #   that locally — reducing KMS API calls (and their cost) by ~99%.
 #   The CMK still controls access; the bucket key is just a performance optimisation.
 resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
-  count  = var.enable_kms ? 1 : 0
-  bucket = aws_s3_bucket.sdp_s3_bucket.id
+  count  = !var.skip_bucket_creation && var.enable_kms ? 1 : 0
+  bucket = aws_s3_bucket.sdp_s3_bucket[0].id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm     = "aws:kms"       # use KMS-based encryption (not SSE-S3)
-      kms_master_key_id = var.kms_key_arn # the CMK ARN from kms.tf
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = var.kms_key_arn
     }
     bucket_key_enabled = true
   }
@@ -98,7 +100,11 @@ resource "aws_iam_role" "unity_catalog" {
 # ── S3 access policy ─────────────────────────────────────────────
 resource "aws_iam_policy" "s3_access" {
   name        = "${var.iam_role_name}-s3-access"
-  description = "Grants read/write access to ${aws_s3_bucket.sdp_s3_bucket.bucket}"
+  description = "Grants read/write access to ${local.bucket_name}"
+
+  lifecycle {
+    ignore_changes = [description]
+  }
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -123,8 +129,8 @@ resource "aws_iam_policy" "s3_access" {
           "s3:AbortMultipartUpload",
         ]
         Resource = [
-          "arn:aws:s3:::${aws_s3_bucket.sdp_s3_bucket.bucket}/*",
-          "arn:aws:s3:::${aws_s3_bucket.sdp_s3_bucket.bucket}",
+          "arn:aws:s3:::${local.bucket_name}/*",
+          "arn:aws:s3:::${local.bucket_name}",
         ]
       }],
       # Self-assume permission — only needed for UC roles (non-workspace)
@@ -150,7 +156,7 @@ resource "aws_iam_policy" "file_events" {
   count = var.enable_file_events ? 1 : 0
 
   name        = "${var.iam_role_name}-file-events"
-  description = "Allows Databricks Auto Loader to manage SQS/SNS file event notifications for ${aws_s3_bucket.sdp_s3_bucket.bucket}"
+  description = "Allows Databricks Auto Loader to manage SQS/SNS file event notifications for ${local.bucket_name}"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -176,7 +182,7 @@ resource "aws_iam_policy" "file_events" {
           "sqs:TagQueue",
         ]
         Resource = [
-          "arn:aws:s3:::${aws_s3_bucket.sdp_s3_bucket.bucket}",
+          "arn:aws:s3:::${local.bucket_name}",
           "arn:aws:sqs:*:*:csms-*",
           "arn:aws:sns:*:*:csms-*",
         ]
@@ -229,8 +235,8 @@ resource "aws_iam_role_policy_attachment" "file_events" {
 # bucket. The DatabricksAccountId condition scopes this to your specific
 # Databricks account when var.databricks_account_id is provided.
 resource "aws_s3_bucket_policy" "workspace" {
-  count  = local.is_workspace ? 1 : 0
-  bucket = aws_s3_bucket.sdp_s3_bucket.id
+  count  = local.is_workspace && !var.skip_bucket_creation ? 1 : 0
+  bucket = aws_s3_bucket.sdp_s3_bucket[0].id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -246,8 +252,8 @@ resource "aws_s3_bucket_policy" "workspace" {
         "s3:GetBucketLocation",
       ]
       Resource = [
-        "arn:aws:s3:::${aws_s3_bucket.sdp_s3_bucket.bucket}/*",
-        "arn:aws:s3:::${aws_s3_bucket.sdp_s3_bucket.bucket}",
+        "arn:aws:s3:::${local.bucket_name}/*",
+        "arn:aws:s3:::${local.bucket_name}",
       ]
       Condition = {
         StringEquals = {
@@ -263,14 +269,14 @@ resource "databricks_storage_credential" "this" {
   count = local.is_workspace ? 0 : 1
 
   name    = var.storage_credential_name
-  comment = "Storage credential for S3 external location: ${aws_s3_bucket.sdp_s3_bucket.bucket}"
+  comment = "Storage credential for S3 external location: ${local.bucket_name}"
 
   aws_iam_role {
     role_arn = "arn:aws:iam::${var.aws_account_id}:role/${var.iam_role_name}"
   }
-
-  read_only  = var.read_only
-  depends_on = [aws_iam_role_policy_attachment.s3_access]
+  skip_validation = true
+  read_only       = var.read_only
+  depends_on      = [aws_iam_role_policy_attachment.s3_access]
 }
 
 resource "time_sleep" "wait_for_iam_propagation" {
@@ -283,9 +289,9 @@ resource "databricks_external_location" "this" {
   count = local.is_workspace ? 0 : 1
 
   name            = var.external_location_name
-  url             = "s3://${aws_s3_bucket.sdp_s3_bucket.bucket}"
+  url             = "s3://${local.bucket_name}"
   credential_name = databricks_storage_credential.this[0].name
-  comment         = "External location for ${aws_s3_bucket.sdp_s3_bucket.bucket}"
+  comment         = "External location for ${local.bucket_name}"
   read_only       = var.read_only
 
   depends_on = [time_sleep.wait_for_iam_propagation]
@@ -296,7 +302,7 @@ resource "databricks_catalog" "this" {
   for_each = var.catalogs
 
   name          = each.key
-  storage_root  = "s3://${aws_s3_bucket.sdp_s3_bucket.bucket}/${each.value.subdir}"
+  storage_root  = "s3://${local.bucket_name}/${each.value.subdir}"
   owner         = each.value.owner
   force_destroy = true
 
