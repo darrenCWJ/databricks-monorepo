@@ -3,12 +3,12 @@
 #
 # Usage:
 #   make <target>              — run with defaults
-#   make <target> P=apps/foo   — override path variable
+#   make <target> P=projects/foo   — override path variable
 #
 # Examples:
 #   make test                  — run all tests (P defaults to ".")
-#   make test P=apps/fraud-alert-daily
-#   make bundle-deploy P=apps/fraud-alert-daily T=staging
+#   make test P=projects/fraud-alert-daily
+#   make bundle-deploy P=projects/fraud-alert-daily T=staging
 
 SHELL := /bin/bash
 .SHELLFLAGS := -euc
@@ -30,8 +30,10 @@ help: ## Show available commands
 	@echo "Variables (pass as VAR=value):"
 	@echo "  P       Target path (default: .)"
 	@echo "  T       Deploy target (default: dev)"
-	@echo "  KIND    App kind for scaffolding (default: python)"
-	@echo "  NAME    Project name (required for new-app, new-lib)"
+	@echo "  KIND    Language for scaffolding (default: python)"
+	@echo "  NAME    Subdomain name (required for new-project, new-lib)"
+	@echo "  DOMAIN  Business domain (required for new-project)"
+	@echo "  FUNCTION Project function type (required for new-project)"
 	@echo "  JOB     Job key (required for bundle-run)"
 	@echo "  JOB_ID  Databricks job ID (required for import-job)"
 	@echo "  MODEL   Model name (required for where-is)"
@@ -57,10 +59,11 @@ test-cov: ## Run tests with coverage (P=path)
 
 # ----- linting -----
 .PHONY: lint
-lint: ## Lint: ruff + mypy (P=path)
+lint: ## Lint: ruff + mypy + lib dependency check (P=path)
 	uv run ruff check $(P)
 	uv run ruff format --check $(P)
 	-uv run mypy $(P)
+	uv run python tools/scripts/check_lib_deps.py
 
 .PHONY: fix
 fix: ## Auto-fix lint issues (P=path)
@@ -83,7 +86,7 @@ bundle-destroy: ## Tear down a DAB (P=path, T=target)
 .PHONY: bundle-run
 bundle-run: ## Trigger a job run (P=path, JOB=key, T=target)
 ifndef JOB
-	$(error JOB is required. Usage: make bundle-run P=apps/foo JOB=task_key)
+	$(error JOB is required. Usage: make bundle-run P=projects/foo JOB=task_key)
 endif
 	cd $(P) && databricks bundle run -t $(T) $(JOB)
 
@@ -96,24 +99,35 @@ sbt-test: ## Run sbt tests (P=path)
 sbt-assembly: ## Build fat JAR (P=path)
 	cd $(P) && sbt assembly
 
+# ----- dependency checks -----
+.PHONY: check-lib-deps
+check-lib-deps: ## Verify all lib imports in projects/ have matching pyproject.toml declarations
+	uv run python tools/scripts/check_lib_deps.py
+
 # ----- scaffolding -----
 .PHONY: list-libs
 list-libs: ## Show available shared libraries and what they provide (KEYWORD=optional)
 	uv run python tools/scripts/list_libs.py $(if $(KEYWORD),--keyword $(KEYWORD),)
 
-.PHONY: new-app
-new-app: ## Scaffold new app (NAME=name, KIND=python|scala)
+.PHONY: new-project
+new-project: ## Scaffold new project (DOMAIN=domain, FUNCTION=type, NAME=name, KIND=python|scala)
+ifndef DOMAIN
+	$(error DOMAIN is required. Usage: make new-project DOMAIN=finance FUNCTION=pipeline NAME=accounts-payable)
+endif
+ifndef FUNCTION
+	$(error FUNCTION is required. Valid: pipeline, streaming, app, dashboard, api, sync, capture)
+endif
 ifndef NAME
-	$(error NAME is required. Usage: make new-app NAME=finance-recon KIND=python)
+	$(error NAME is required. Usage: make new-project DOMAIN=finance FUNCTION=pipeline NAME=accounts-payable)
 endif
 	@echo ""
 	@echo "Available shared libraries (check before writing new code):"
 	@echo "-------------------------------------------------------------"
 	uv run python tools/scripts/list_libs.py
 	@echo "-------------------------------------------------------------"
-	@echo "Proceeding with scaffold for: $(NAME)"
+	@echo "Proceeding with scaffold: projects/$(DOMAIN)/$(FUNCTION)-$(NAME)"
 	@echo ""
-	uv run python tools/scripts/scaffold.py app --name $(NAME) --kind $(KIND)
+	uv run python tools/scripts/scaffold.py project --domain $(DOMAIN) --function $(FUNCTION) --name $(NAME) --kind $(KIND)
 	$(MAKE) data-map
 
 .PHONY: new-lib
@@ -127,7 +141,7 @@ endif
 .PHONY: import-job
 import-job: ## Import existing Databricks Job (JOB_ID=id, T=target_path)
 ifndef JOB_ID
-	$(error JOB_ID is required. Usage: make import-job JOB_ID=123 T=apps/foo)
+	$(error JOB_ID is required. Usage: make import-job JOB_ID=123 T=projects/foo)
 endif
 	uv run python tools/scripts/import_job.py $(JOB_ID) $(T)
 
@@ -168,10 +182,10 @@ platform-health: ## Cross-reference CODEOWNERS, data-architecture.md, and disk (
 .PHONY: diff-outputs
 diff-outputs: ## Compare bundle vs legacy output (BUNDLE=path, LEGACY=path)
 ifndef BUNDLE
-	$(error BUNDLE is required. Usage: make diff-outputs BUNDLE=apps/foo LEGACY=/old)
+	$(error BUNDLE is required. Usage: make diff-outputs BUNDLE=projects/foo LEGACY=/old)
 endif
 ifndef LEGACY
-	$(error LEGACY is required. Usage: make diff-outputs BUNDLE=apps/foo LEGACY=/old)
+	$(error LEGACY is required. Usage: make diff-outputs BUNDLE=projects/foo LEGACY=/old)
 endif
 	uv run python tools/scripts/diff_outputs.py --bundle $(BUNDLE) --legacy $(LEGACY)
 
@@ -193,9 +207,26 @@ dump-access: ## Export access grants for audit (T=target, default prod)
 .PHONY: audit-log
 audit-log: ## Record deploy audit entry (BUNDLE, T=target, SHA)
 ifndef BUNDLE
-	$(error BUNDLE is required. Usage: make audit-log BUNDLE=apps/foo T=prod SHA=abc123)
+	$(error BUNDLE is required. Usage: make audit-log BUNDLE=projects/foo T=prod SHA=abc123)
 endif
 ifndef SHA
-	$(error SHA is required. Usage: make audit-log BUNDLE=apps/foo T=prod SHA=abc123)
+	$(error SHA is required. Usage: make audit-log BUNDLE=projects/foo T=prod SHA=abc123)
 endif
 	uv run python tools/scripts/audit_log.py --bundle $(BUNDLE) --target $(T) --sha $(SHA)
+
+# ----- dependency graph -----
+.PHONY: dep-graph
+dep-graph: ## Show full dependency graph (data + lib + runtime)
+	uv run python tools/scripts/build_dep_graph.py
+
+.PHONY: dep-graph-json
+dep-graph-json: ## Output dependency graph as JSON
+	uv run python tools/scripts/build_dep_graph.py --json
+
+.PHONY: check-deps
+check-deps: ## Check for breaking schema changes and report downstream impact
+	uv run python tools/scripts/check_schema_breaking.py
+
+.PHONY: check-contract-drift
+check-contract-drift: ## Validate contracts/schema.yml matches code + input existence
+	uv run python tools/scripts/check_contract_drift.py

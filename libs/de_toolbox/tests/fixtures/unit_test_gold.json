@@ -1,0 +1,40 @@
+{
+  "dimension": [
+    {
+      "table_name": "worker",
+      "hub_reference": "hub_worker",
+      "sat_reference": [
+        "sat_worker_details_i",
+        "sat_worker_details_ii"
+      ],
+      "sat_fields": [],
+      "pit_tbl": "pit_worker",
+      "pk": "HashEmployeeId",
+      "bk": [
+        "EmployeeId"
+      ],
+      "project": "",
+      "scd": 2
+    }
+  ],
+  "fact": [
+    {
+      "table_name": "worker_supervisory_org",
+      "lnk_reference": "lnk_worker_organization",
+      "sat_reference": [
+      ],
+      "pit_reference": "",
+      "pk": "HashEmployeeIdOrganizationId",
+      "bk": "",
+      "scd": 1
+    }
+  ],
+  "pit": [
+    {
+      "table_name": "worker",
+      "primary_key": "HashEmployeeId",
+      "satellites": ["sat_worker_details_i", "sat_worker_details_ii"]
+    }
+  ],
+  "project": "test"
+}

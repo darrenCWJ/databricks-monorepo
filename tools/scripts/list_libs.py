@@ -207,7 +207,7 @@ def print_report(libs: list[LibInfo], keyword: str | None) -> int:
         else:
             print("  Provides: (none documented — add a ## Provides section to AGENTS.md)")
         print(f"  Import : from {lib.name.replace('-', '_')} import ...")
-        print(f"  Add dep: uv add {lib.name} --package apps/<your-app>")
+        print(f"  Add dep: uv add {lib.name} --package projects/<your-app>")
 
     # ── Footer ────────────────────────────────────────────────────────────────
     print(f"\n{SEP}")

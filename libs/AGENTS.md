@@ -1,59 +1,89 @@
 # libs/ — Shared Python libraries
 
 ## What goes here
-Internal Python packages reused by 2+ apps. Imported as workspace
-dependencies via `pyproject.toml` `[tool.uv.sources]`.
+Internal Python packages reused by 2+ projects. Each directory under `libs/`
+IS the importable Python package — no `src/` wrapper.
+
+## How to use a lib in a Databricks notebook
+
+```python
+import sys
+sys.path.append("/Workspace/Repos/shared/mono-dev/libs")
+
+from de_toolbox.pipeline.copper import create_copper_table
+from de_toolbox.delta import save_df_to_delta_with_column_mapping
+```
 
 ## Structure per library
+
 ```
-libs/<name>/
-├── AGENTS.md
-├── pyproject.toml
-├── src/<package>/
+libs/<package_name>/      <- This IS the importable package
+├── __init__.py           <- Public API re-exports
+├── AGENTS.md             <- Agent docs (lookup tables, rules)
+├── pyproject.toml        <- Package metadata + dependencies
+├── module_a.py           <- Top-level modules
+├── subpackage/           <- Grouped modules
 │   ├── __init__.py
 │   └── ...
-└── tests/
+└── tests/                <- pytest tests
 ```
 
-## AGENTS.md template for each lib
+## AGENTS.md requirements for each lib
 
-Every lib must have its own `AGENTS.md` with a `## Provides` section.
-This is read by `make list-libs` to surface the lib to new apps and migrations.
+Every lib AGENTS.md must have:
+1. **Import path** + **notebook setup** at the top
+2. **Folder structure** annotated with each file's purpose
+3. **Lookup table**: "I need to X" -> exact import + args
+4. **Rules** for new code vs legacy
 
-```markdown
-# <lib-name>
+## Available libraries
 
-<One paragraph: what this library provides and why it exists.>
+| Library | Package | Provides | Owner |
+|---------|---------|----------|-------|
+| de_toolbox | `de_toolbox` | Medallion pipelines, Data Vault, Kimball, DQ, profiling, connectors (Workday/SharePoint), UC permissions | @wei_hao_tan @jeffrey_siew |
 
-## Owner
-@cdo/<team>
+## Blast radius
 
-## Provides
-- `<package>.<module>.<function>` — <what it does, when to use it>
-- `<package>.<module>.<class>` — <what it does, when to use it>
+When a lib is modified, `make affected` reports:
+- **Projects** that declare the lib in their `pyproject.toml` dependencies
+- **Transitive** libs that depend on the changed lib (full BFS closure)
+- **Scripts** in `tools/scripts/` that import the lib package
+- **Skills** in `.claude/skills/` that reference the lib
 
-## Consumers
-- apps/<app-name> — <why it uses this lib>
+CODEOWNERS for affected projects are automatically notified via CI.
 
-## Rules
-- <constraints, e.g. "no Spark imports — pure Python only">
-- <e.g. "semver versioning — bump minor for new public functions">
+### How consumers declare dependency (MANDATORY)
+
+Every project that uses a lib MUST add it to `pyproject.toml`:
+
+```toml
+# projects/<domain>/<name>/pyproject.toml
+[project]
+dependencies = [
+    "de-toolbox",
+]
 ```
 
-Run `make list-libs` to see all registered libs and what they expose.
+Without this declaration, `make affected` CANNOT detect the project as
+impacted. Undeclared consumers will silently break on lib changes.
 
 ## Rules
-1. Only create a library when code is shared by 2+ apps. Inline otherwise.
+1. Only create a library when code is shared by 2+ projects. Inline otherwise.
 2. API changes go in a dedicated PR; consumer apps update separately.
-3. Platform-wide libs (`common-*`, `testing-utils`) are owned by `@cdo/platform-team`.
-4. Team-private libs (`<team>-common`) are owned by the respective team.
+3. Consuming projects MUST declare the lib in `pyproject.toml` dependencies.
+4. Platform-wide libs (`common-*`, `testing-utils`) are owned by `@cdo/platform-team`.
+5. Team-private libs (`<team>-common`) are owned by the respective team.
 
 ## Creating a new library
 ```bash
 make new-lib NAME=<name>
 ```
 
-After creation, register in root `pyproject.toml` under `[tool.uv.workspace] members`.
+After creation:
+1. Register in root `pyproject.toml` under `[tool.uv.workspace] members`
+2. Add `AGENTS.md` with folder structure + lookup tables
+3. Update `libs/AGENTS.md` available libraries table
+4. Update `libs/README.md` available libraries table
 
 ## Testing
 ```bash

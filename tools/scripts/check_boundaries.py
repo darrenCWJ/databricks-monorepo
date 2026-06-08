@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Pre-commit hook: block imports across apps/ boundaries.
+"""Pre-commit hook: block imports across projects/ boundaries.
 
-`apps/X` is allowed to import from `libs/*` but NOT from `apps/Y`.
+`projects/X` is allowed to import from `libs/*` but NOT from `projects/Y`.
 This keeps deploy units independent and ownership clean.
 """
 
@@ -15,14 +15,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def app_of(path: Path) -> str | None:
-    """Return the app name if path is under apps/<name>/, else None."""
+    """Return the project name if path is under projects/<domain>/<name>/, else None."""
     try:
         rel = path.resolve().relative_to(REPO_ROOT)
     except ValueError:
         return None
     parts = rel.parts
-    if len(parts) >= 2 and parts[0] == "apps":
-        return parts[1]
+    if len(parts) >= 3 and parts[0] == "projects":
+        return f"{parts[1]}/{parts[2]}"
     return None
 
 
@@ -37,14 +37,20 @@ def check_file(path: Path) -> list[str]:
         if isinstance(node, ast.ImportFrom) and node.module:
             mod = node.module.split(".")[0]
             # foreign app packages are named "<app>" with hyphens turned to underscores
-            for app_dir in (REPO_ROOT / "apps").iterdir():
-                if not app_dir.is_dir() or app_dir.name == my_app:
+            for domain_dir in (REPO_ROOT / "projects").iterdir():
+                if not domain_dir.is_dir():
                     continue
-                if mod == app_dir.name.replace("-", "_"):
-                    errs.append(
-                        f"{path}: imports from foreign app `{app_dir.name}` "
-                        f"(from {node.module}). Use libs/* instead."
-                    )
+                for app_dir in domain_dir.iterdir():
+                    if not app_dir.is_dir():
+                        continue
+                    app_id = f"{domain_dir.name}/{app_dir.name}"
+                    if app_id == my_app:
+                        continue
+                    if mod == app_dir.name.replace("-", "_"):
+                        errs.append(
+                            f"{path}: imports from foreign project `{app_id}` "
+                            f"(from {node.module}). Use libs/* instead."
+                        )
     return errs
 
 

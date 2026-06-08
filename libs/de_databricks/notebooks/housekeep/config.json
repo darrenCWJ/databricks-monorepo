@@ -1,0 +1,35 @@
+{
+    "accounts": {
+        "GovTech Sandbox": {
+            "account_id": "a53813dc-6929-4f14-9c65-c140cc101566",
+            "workspaces": {
+                "Sandbox": {
+                    "workspace_url": "dbc-378ee888-e6c8.cloud.databricks.com",
+                    "internal_url": "dbc-378ee888-e6c8.cloud.databricks.com",
+                    "warehouse_id": "6bba01996eb04298",
+                    "warehouse_info": "Starter Warehouse",
+                    "debug_email": "tan_wei_hao@tech.gov.sg"
+                }
+            }
+        },
+        "GovTech": {
+            "account_id": "a674506f-d79f-4645-908c-da172e7eae9e",
+            "workspaces": {
+                "Development": {
+                    "workspace_url": "gvt-databricks-uat.cloud.databricks.com",
+                    "internal_url": "gvt-databricks-uat.data.tech.gov.sg",
+                    "warehouse_id": "9540ee3ef1faf4aa",
+                    "warehouse_info": "Starter Warehouse",
+                    "debug_email": "tan_wei_hao@tech.gov.sg"
+                },
+                "Production": {
+                    "workspace_url": "gvt-databricks.cloud.databricks.com",
+                    "internal_url": "gvt-databricks.data.tech.gov.sg",
+                    "warehouse_id": "4c9eebe54c75f9e8",
+                    "warehouse_info": "X-Small Warehouse",
+                    "debug_email": "tan_wei_hao@tech.gov.sg"
+                }
+            }
+        }
+    }
+}

@@ -1,13 +1,13 @@
 ---
-name: creating-apps
+name: creating-projects
 description: Guides the full lifecycle of a new greenfield Databricks Asset Bundle — goal clarification, lib discovery, medallion tier design (Bronze/Silver/Gold), scaffolding, registry updates, Claude context, and pre-CI gates. Use when a team needs to build a new data workflow from scratch in this monorepo with no legacy code to migrate.
 ---
 
-# Creating a New App
+# Creating a New Project
 
 ## Overview
 
-Full lifecycle for a new greenfield app: clarify goal, discover reusable libs and existing tables, review design, scaffold, build tiers interactively, register in all required places, set up Claude context, write the ADR, and pass pre-CI gates.
+Full lifecycle for a new greenfield project: clarify goal, discover reusable libs and existing tables, review design, scaffold, build tiers interactively, register in all required places, set up Claude context, write the ADR, and pass pre-CI gates.
 
 **Not this skill:** Migrating existing code into the monorepo — use `migrate-app` instead.
 
@@ -37,41 +37,47 @@ Present **all questions in one message**. User replies with a number or types a 
 
 **Quick setup — reply with a number or type your own:**
 
-**1. App name*** — format: `<team>-<verb>-<noun>`
-> Suggested: `<inferred-from-context>` — confirm or type a new name
-> e.g. `fraud-alert-daily`, `infra-data-sync`
+**1. Domain*** — business domain (lowercase)
+> e.g. `finance`, `hcm`, `infra`, `fraud`, `customer`
 
-**2. Owner team***
-> 1. `@cdo/finance-team` _(recommended if name has `finance-` prefix)_
-> 2. `@cdo/platform-team`
-> 3. `@cdo/supplier-team`
-> 4. `@cdo/infra-team`
-> 5. Other — type team name
+**2. Function type*** — what kind of project is this?
+> 1. `pipeline` — batch ETL, orchestration, ingestion
+> 2. `streaming` — real-time / continuous processing
+> 3. `app` — web apps (Streamlit, Dash, Flask, React)
+> 4. `dashboard` — BI dashboards / Lakeview
+> 5. `api` — REST/HTTP service endpoints
+> 6. `sync` — low-latency read (Lakebase sync)
+> 7. `capture` — operational capture (CDC/events)
 
-**3. What does this app do?*** _(1–2 sentences)_
+**3. Subdomain name*** — what it operates on
+> e.g. `accounts-payable`, `employee-history`, `budget-viewer`
+> Optional wildcard suffix for disambiguation: `-daily`, `-v2`, `-batch`
+> Full project name will be: `<function>-<subdomain>`
+
+**4. What does this project do?*** _(1–2 sentences)_
 > e.g. "Reconciles daily payment transactions against bank statements and flags discrepancies."
 
-**4. Inputs*** — tables or sources this app reads
+**5. Inputs*** — tables or sources this project reads
 > e.g. `cdo_dev.landing.payments` — or type "unknown" to fill in later
 
-**5. Outputs*** — tables this app produces
+**6. Outputs*** — tables this project produces
 > e.g. `cdo_dev.gold.payment_recon` — or type "unknown" to fill in later
 
-**6. Schedule***
+**7. Schedule***
 > 1. Daily at 02:00 SGT _(recommended)_
 > 2. Hourly
 > 3. Triggered by upstream job — type job name
 > 4. On-demand only
 > 5. Other — type cron expression
 
-**7. Language***
+**8. Language***
 > 1. Python _(recommended)_
 > 2. Scala
 
-**8. Business rules** _(optional — press Enter or "none" to skip)_
+**9. Business rules** _(optional — press Enter or "none" to skip)_
 > e.g. "Never backfill > 30 days", "99.9% completeness SLA by 06:00 SGT"
 
-**9. Claude context** _(optional)_
+**10. Claude context** _(optional)_
 > 1. Yes — create `CLAUDE.md` _(recommended for complex domain apps)_
 > 2. No
 
@@ -83,21 +89,59 @@ If any answer introduces new uncertainty, ask again before moving on.
 
 ## Phase 0 — Discovery (read-only)
 
-### Step 0a: Show available shared libraries
+### Step 0a: Show available shared libraries (MANDATORY — check before writing any code)
 
 ```bash
 make list-libs
 ```
 
-Note any lib covering functionality the app needs — import it rather than re-implement.
+Present the libraries to the user with recommendations:
 
-### Step 0b: Show same-team apps for reference
+```
+AVAILABLE SHARED LIBRARIES
+─────────────────────────────────────────────────────────────────
+Library          What it provides                                      Recommend?
+de_toolbox       Medallion pipeline (copper→bronze→silver→gold),       YES if ingesting/transforming data
+                 Data Vault, Kimball, DQ checks, data profiling,
+                 SharePoint/Workday connectors, email notifications
 
-```bash
-ls apps/ | grep <team-prefix>
+de_databricks    Workspace admin: session management, IAM/SCIM,        YES if managing users, groups,
+                 Unity Catalog grants, compute provisioning,           permissions, or Databricks resources
+                 Tableau sync, housekeeping, catalog migration
+─────────────────────────────────────────────────────────────────
 ```
 
-Surface similar apps so the new one can follow established patterns.
+**Why use these libraries:**
+- They encode **team-validated patterns** hardened through production use
+- They handle edge cases (environment detection, OAuth token rotation, API version switching)
+- They ensure **consistency** across all platform projects
+- Changes propagate automatically via `make affected` blast radius tracking
+- Re-implementing the same logic creates maintenance debt when platform APIs evolve
+
+**If a lib covers your need → import it.** Add to `pyproject.toml` dependencies:
+```toml
+dependencies = ["de-toolbox", "de-databricks"]  # only those you actually import
+```
+
+And in notebooks (per ADR-0003 src/ layout):
+```python
+import sys
+sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_toolbox/src")
+sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_databricks/src")
+```
+
+**If the user references code from an external repo not in `libs/`** — stop and ask:
+"Which repo does this come from? Is it already in our shared libs, or does it
+need to be migrated in?" Every import must resolve to a shared lib, a pip
+dependency, or the project's own `src/`. Nothing else is acceptable.
+
+### Step 0b: Show same-team projects for reference
+
+```bash
+ls projects/<domain>/
+```
+
+Surface similar projects so the new one can follow established patterns.
 
 ### Step 0c: Show all available output tables from other apps
 
@@ -120,10 +164,10 @@ Note cross-app dependencies — they become Inputs in AGENTS.md and sources in t
 ### Step 0d: Check CODEOWNERS wildcard coverage
 
 ```bash
-grep "/apps/<team>-" CODEOWNERS
+grep "/projects/<domain>/<function>-" CODEOWNERS
 ```
 
-Note whether a wildcard already covers this app's name — relevant for Phase 6.
+Note whether a wildcard already covers this project's name — relevant for Phase 6.
 
 ---
 
@@ -134,18 +178,19 @@ Present the full design using Pre-Flight and Phase 0 findings. **Do not scaffold
 ```
 APP DESIGN REVIEW
 ─────────────────────────────────────────────────────────────────
-Name         : <team>-<verb>-<noun>
+Name         : <function>-<subdomain>-<wildcard>
 Owner        : @cdo/<team>
 Language     : Python | Scala
 Goal         : <1-2 sentence description>
 
 Files to create:
-  apps/<name>/AGENTS.md
-  apps/<name>/bundle.yml
-  apps/<name>/pyproject.toml
-  apps/<name>/notebooks/run.py
-  apps/<name>/src/<pkg>/job.py
-  apps/<name>/tests/test_job.py
+  projects/<domain>/<name>/AGENTS.md
+  projects/<domain>/<name>/bundle.yml
+  projects/<domain>/<name>/pyproject.toml
+  projects/<domain>/<name>/notebooks/run.py
+  projects/<domain>/<name>/src/<pkg>/job.py
+  projects/<domain>/<name>/tests/test_job.py
+  projects/<domain>/<name>/contracts/schema.yml
 
 I/O:
   Reads  : <catalog.schema.table>, ...
@@ -171,10 +216,10 @@ Confirm the design above, or specify corrections.
 
 ### Step 2a: Run scaffold
 
-> [Phase 2] About to run `make new-app NAME=<name> KIND=python` — creates folder and stub files.
+> [Phase 2] About to run `make new-project DOMAIN=<domain> FUNCTION=<function> NAME=<name> KIND=python` — creates folder and stub files.
 
 ```bash
-make new-app NAME=<name> KIND=python
+make new-project DOMAIN=<domain> FUNCTION=<function> NAME=<name> KIND=python
 ```
 
 ### Step 2b: Fill every stub immediately (no TODOs in committed files)
@@ -195,6 +240,23 @@ def run(catalog: str) -> None:
 
 **`tests/test_job.py`** — replace smoke test with one meaningful unit test
 that asserts real behaviour (not just "it ran").
+
+**`contracts/schema.yml`** — declare output table columns with types and classification:
+```yaml
+models:
+  - name: <catalog.schema.table>
+    columns:
+      - name: <column>
+        data_type: STRING|DECIMAL(18,2)|TIMESTAMP|...
+        meta:
+          pii: true|false
+          classification: Official-Open|Official-Closed|Restricted
+          sensitivity: Sensitive-Normal|Sensitive-High|NA
+          retention_days: <integer>
+```
+
+This is required for all projects that write output tables. Breaking changes
+(drop/rename/type-change) are blocked by pre-commit if downstream consumers exist.
 
 ---
 
@@ -267,16 +329,16 @@ All three must land in the same MR as the app code.
 ```diff
  [tool.uv.workspace]
  members = [
-+    "apps/<name>",
++    "projects/<domain>/<name>",
  ]
 ```
 
 ### `CODEOWNERS`
 > [Phase 6] About to add CODEOWNERS line (skip if wildcard already covers it).
 
-If no wildcard covers `apps/<name>`, add before `# ---- Libraries ----`:
+If no wildcard covers `projects/<domain>/<name>`, add before `# ---- Libraries ----`:
 ```
-/apps/<name>/   @cdo/<team>
+/projects/<domain>/<name>/   @cdo/<team>
 ```
 
 ### `docs/data-architecture.md`
@@ -296,7 +358,7 @@ Skip if human answered "No" to Claude context in Pre-Flight.
 
 ### Step 7a: Create app-level CLAUDE.md
 
-> [Phase 7] About to create `apps/<name>/CLAUDE.md` — gives Claude domain context for future sessions.
+> [Phase 7] About to create `projects/<domain>/<name>/CLAUDE.md` — gives Claude domain context for future sessions.
 
 Contents: what the app does, domain rules never to violate, data contracts table, how to run locally, gotchas.
 
@@ -330,7 +392,7 @@ Accepted
 <Why this app is being built and what problem it solves.>
 
 ## Decision
-Create `apps/<name>` as a Databricks Asset Bundle owned by @cdo/<team>.
+Create `projects/<domain>/<name>` as a Databricks Asset Bundle owned by @cdo/<team>.
 
 ## Consequences
 - <Downstream consumers to be aware of new output tables.>
@@ -347,10 +409,10 @@ Create `apps/<name>` as a Databricks Asset Bundle owned by @cdo/<team>.
 All must pass before opening an MR:
 
 ```bash
-make lint P=apps/<name>           # ruff + mypy
-make test P=apps/<name>           # pytest
-make test-cov P=apps/<name>       # >=80% coverage
-make bundle-validate P=apps/<name>
+make lint P=projects/<domain>/<name>           # ruff + mypy
+make test P=projects/<domain>/<name>           # pytest
+make test-cov P=projects/<domain>/<name>       # >=80% coverage
+make bundle-validate P=projects/<domain>/<name>
 pre-commit run --all-files
 make check-data-map
 make affected
@@ -388,6 +450,8 @@ make affected
 - [ ] ADR committed in `docs/adr/`
 - [ ] `CLAUDE.md` created if human opted in
 - [ ] No hardcoded secrets — use `${secrets.scope.key}`
+- [ ] `contracts/schema.yml` declares all output columns
+- [ ] `## Runtime Dependencies` filled if project calls/reads other projects
 - [ ] MR includes change-ticket ID (SOC2)
 - [ ] CODEOWNERS approval not by the author
 

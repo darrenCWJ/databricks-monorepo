@@ -7,7 +7,7 @@ a configurable set of business-metric aggregates.
 
 Usage:
     uv run python tools/scripts/diff_outputs.py \
-        --bundle apps/customer360-etl \
+        --bundle projects/customer360-etl \
         --legacy cdo_dev.legacy.customer_360 \
         --new    cdo_dev.silver.customer_360 \
         --key customer_id

@@ -5,7 +5,7 @@ bundle:
   name: cdo-platform
 
 include:
-  - apps/*/bundle.yml
+  - projects/*/*/bundle.yml
 
 targets:
   dev:

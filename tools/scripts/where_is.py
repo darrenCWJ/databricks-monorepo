@@ -77,10 +77,10 @@ def find_app_consumers(name: str) -> list[str]:
     text = doc.read_text()
     consumers: list[str] = []
     for line in text.splitlines():
-        if name in line and "apps/" in line:
+        if name in line and "projects/" in line:
             # crude match — line in the consumer matrix mentioning this model
             for token in line.split("`"):
-                if token.startswith("apps/"):
+                if token.startswith("projects/"):
                     consumers.append(token)
     return sorted(set(consumers))
 

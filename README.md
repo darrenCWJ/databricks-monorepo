@@ -7,8 +7,8 @@ and tooling live here as independently deployable units.
 
 ```
 mono-dev/
-├── apps/                  # Databricks Asset Bundles — one per pipeline/job
-├── libs/                  # Shared Python libraries used by 2+ apps
+├── projects/                  # Databricks Asset Bundles — one per pipeline/job
+├── libs/                  # Shared Python libraries used by 2+ projects
 ├── infra/                 # Terraform + Unity Catalog IaC
 ├── tools/                 # Cross-cutting scripts (scaffold, CI, compliance)
 ├── docs/                  # ADRs, runbooks, compliance, onboarding guides
@@ -35,6 +35,17 @@ mono-dev/
 | Databricks CLI | 0.18+ | `pip install databricks-cli` or [setup-cli](https://github.com/databricks/setup-cli) |
 | Git | 2.30+ | System |
 | pre-commit | 3.8+ | Installed via `make setup` |
+
+### Check if prerequisites are installed
+
+If this is your first time, run the Databricks connector install skill in Claude Code to verify your environment:
+
+```
+/databricks-connector-install
+```
+
+This scans for all required tools (git, uv, Databricks CLI), checks versions,
+and walks you through anything missing.
 
 ### First-time setup
 
@@ -65,25 +76,25 @@ You build and maintain batch/streaming pipelines that run on Databricks.
 
 1. **Create a new pipeline:**
    ```bash
-   make new-app NAME=<team>-<verb>-<noun> KIND=python
-   # Example: make new-app NAME=fraud-alert-daily KIND=python
+   make new-project DOMAIN=<domain> FUNCTION=pipeline NAME=<subdomain> KIND=python
+   # Example: make new-project DOMAIN=fraud FUNCTION=pipeline NAME=alert-daily KIND=python
    ```
 
-2. **Write your logic** in `apps/<name>/src/<package>/` (not in notebooks).
+2. **Write your logic** in `projects/<name>/src/<package>/` (not in notebooks).
 
 3. **Write tests first:**
    ```bash
-   make test P=apps/<name>
+   make test P=projects/<name>
    ```
 
 4. **Validate the bundle:**
    ```bash
-   make bundle-validate P=apps/<name>
+   make bundle-validate P=projects/<name>
    ```
 
 5. **Deploy to dev:**
    ```bash
-   make bundle-deploy P=apps/<name> T=dev
+   make bundle-deploy P=projects/<name> T=dev
    ```
 
 6. **Open a merge request** targeting `main`.
@@ -101,7 +112,7 @@ You build and maintain batch/streaming pipelines that run on Databricks.
 - `docs/runbooks/create-a-new-project.md` — full project creation checklist
 - `docs/runbooks/import-existing-job.md` — bring an existing Databricks Job into the repo
 - `docs/runbooks/migrate-a-script.md` — convert a legacy script into a DAB
-- `apps/AGENTS.md` — structure and rules for apps
+- `projects/AGENTS.md` — structure and rules for apps
 
 ---
 
@@ -115,12 +126,12 @@ You build ML training pipelines, experiments, and model serving.
 
 2. **When ready to productionise**, extract logic into a proper app:
    ```bash
-   make new-app NAME=<team>-train-<model> KIND=python
+   make new-project DOMAIN=<domain> FUNCTION=pipeline NAME=train-<model> KIND=python
    ```
 
 3. **Structure your code:**
    ```
-   apps/<name>/
+   projects/<name>/
    ├── src/<package>/
    │   ├── features.py      # Feature engineering
    │   ├── train.py         # Training logic
@@ -135,8 +146,8 @@ You build ML training pipelines, experiments, and model serving.
 
 5. **Test locally**, then open an MR:
    ```bash
-   make test P=apps/<name>
-   make lint P=apps/<name>
+   make test P=projects/<name>
+   make lint P=projects/<name>
    ```
 
 ### Key conventions
@@ -172,7 +183,7 @@ You maintain the shared infrastructure, CI/CD, and developer tooling.
 ### Common tasks
 
 **Add a new team to the monorepo:**
-1. Add CODEOWNERS wildcard: `/apps/<team>-*/  @cdo/<team>`
+1. Add CODEOWNERS wildcard: `/projects/<team>-*/  @cdo/<team>`
 2. Document in `docs/data-architecture.md`
 
 **Update CI pipeline:**
@@ -205,8 +216,8 @@ Databricks Code Assistant / Genie Code) that work in this repo.
 
 ```
 AGENTS.md (root)           <- Every agent reads this first
-├── apps/AGENTS.md         <- Domain guide for apps
-├── apps/<name>/AGENTS.md  <- Per-project context (when projects exist)
+├── projects/AGENTS.md         <- Domain guide for apps
+├── projects/<name>/AGENTS.md  <- Per-project context (when projects exist)
 ├── libs/AGENTS.md         <- Domain guide for libraries
 ├── infra/AGENTS.md        <- Infrastructure rules
 └── tools/AGENTS.md        <- Available scripts
@@ -248,7 +259,7 @@ You review merge requests and manage team boundaries.
 `CODEOWNERS` defines who reviews what. Patterns are team-prefix based:
 
 ```
-/apps/finance-*/    @wei_hao_tan @jeffrey_siew
+/projects/finance-*/    @wei_hao_tan @jeffrey_siew
 /libs/common-*/     @wei_hao_tan @jeffrey_siew
 ```
 
@@ -309,10 +320,12 @@ Full details: `docs/runbooks/branching-strategy.md`
 | `make bundle-deploy P=PATH T=TARGET` | Deploy a DAB (default: dev) |
 | `make bundle-run P=PATH JOB=JOB T=TARGET` | Trigger a job run |
 | `make bundle-destroy P=PATH T=TARGET` | Tear down a DAB |
-| `make new-app NAME=NAME KIND=KIND` | Scaffold new app (python/scala) |
+| `make new-project DOMAIN=DOMAIN FUNCTION=FUNCTION NAME=NAME KIND=KIND` | Scaffold new project |
 | `make new-lib NAME=NAME` | Scaffold new shared library |
 | `make import-job JOB_ID=JOB_ID T=TARGET` | Import existing Databricks Job |
-| `make affected` | List what changed vs main |
+| `make affected` | List what changed vs main (includes downstream blast radius) |
+| `make dep-graph` | Show full dependency graph (data + lib + runtime) |
+| `make check-deps` | Check for breaking schema changes |
 | `make where-is MODEL=MODEL` | Locate a model and its consumers |
 | `make dump-access T=TARGET` | Export access grants for audit |
 | `make ci-local` | Run full CI locally |

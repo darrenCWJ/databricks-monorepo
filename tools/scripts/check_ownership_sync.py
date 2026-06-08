@@ -5,7 +5,7 @@ Checks:
 1. Every @cdo/<team> referenced outside CODEOWNERS also exists in CODEOWNERS.
 2. Every group in CODEOWNERS is referenced at least once elsewhere
    (or appears in ALLOWED_UNREFERENCED — platform-wide / cross-cutting roles).
-3. Every directory under apps/, libs/, dbt/ matches at least one CODEOWNERS rule.
+3. Every directory under projects/, libs/, dbt/ matches at least one CODEOWNERS rule.
 
 Run manually:
     uv run python tools/scripts/check_ownership_sync.py
@@ -23,7 +23,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCAN_PATTERNS = [
     "AGENTS.md",
     "CLAUDE.md",
-    "apps/*/AGENTS.md",
+    "projects/*/*/AGENTS.md",
     "libs/*/AGENTS.md",
     "dbt/AGENTS.md",
     "dbt/*/AGENTS.md",
@@ -127,15 +127,23 @@ def matches_any_codeowners_glob(rel_path: str, globs: list[str]) -> bool:
 
 
 def directories_to_check() -> list[str]:
-    """Each subdirectory of apps/, libs/, dbt/ must match a CODEOWNERS rule."""
+    """Each project under projects/<domain>/<name>/ must match a CODEOWNERS rule."""
     dirs: list[str] = []
-    for top in ("apps", "libs", "dbt"):
+    for top in ("projects", "libs", "dbt"):
         root = REPO_ROOT / top
         if not root.exists():
             continue
-        for d in sorted(root.iterdir()):
-            if d.is_dir():
-                dirs.append(f"{top}/{d.name}/")
+        if top == "projects":
+            for domain in sorted(root.iterdir()):
+                if not domain.is_dir() or domain.name.startswith("."):
+                    continue
+                for project in sorted(domain.iterdir()):
+                    if project.is_dir():
+                        dirs.append(f"{top}/{domain.name}/{project.name}/")
+        else:
+            for d in sorted(root.iterdir()):
+                if d.is_dir():
+                    dirs.append(f"{top}/{d.name}/")
     return dirs
 
 
@@ -161,7 +169,7 @@ def main() -> int:
         if g not in ALLOWED_UNREFERENCED:
             warns.append(f"Group {g} declared in CODEOWNERS but referenced nowhere else.")
 
-    # Check 3: every apps/, libs/, dbt/ directory must match a CODEOWNERS rule
+    # Check 3: every projects/, libs/, dbt/ directory must match a CODEOWNERS rule
     for d in directories_to_check():
         if not matches_any_codeowners_glob(d, co_globs):
             errs.append(f"Directory /{d} has no specific CODEOWNERS rule (falls to default).")

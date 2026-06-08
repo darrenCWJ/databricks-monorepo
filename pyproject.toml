@@ -20,6 +20,8 @@ dev = [
 [tool.uv.workspace]
 members = [
     "tools/scripts",
+    "libs/de_toolbox",
+    "libs/de_databricks",
 ]
 
 [tool.uv.sources]
@@ -41,7 +43,61 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "S", "B", "UP"]
-ignore = ["S101", "S603", "S607", "S112", "E501"]
+ignore = ["S101", "S603", "S607", "S112", "E501", "F403", "F405"]
+
+[tool.ruff.lint.per-file-ignores]
+"libs/de_toolbox/**" = [
+    "S608",   # hardcoded SQL — standard Spark SQL pattern
+    "S307",   # eval — used for dynamic Spark expressions
+    "S113",   # request-without-timeout — legacy connector code
+    "S314",   # xml parsing — SharePoint connector
+    "S105",   # hardcoded password — false positive on variable names
+    "S108",   # hardcoded temp file
+    "S110",   # try-except-pass
+    "S310",   # suspicious URL open
+    "B006",   # mutable default argument — legacy Spark pattern
+    "B007",   # unused loop variable — Spark iteration patterns
+    "B005",   # strip with multi-chars
+    "B018",   # useless expression
+    "B905",   # zip-without-strict
+    "E402",   # imports after sys.path manipulation
+    "E712",   # true-false comparison — Spark filter pattern
+    "E722",   # bare except — legacy error handling
+    "F841",   # unused variable — Spark side-effect assignments
+    "F402",   # import shadowed by loop var
+]
+"libs/de_toolbox/_legacy/**" = ["ALL"]
+"libs/de_databricks/**" = [
+    "S105",   # hardcoded password — false positive on variable names
+    "S106",   # hardcoded password in test fixtures
+    "S107",   # hardcoded password in function defaults
+    "S108",   # hardcoded temp file
+    "S110",   # try-except-pass
+    "S113",   # request-without-timeout
+    "S608",   # hardcoded SQL
+    "S307",   # eval — used for dynamic config
+    "B006",   # mutable default argument
+    "B007",   # unused loop variable
+    "B018",   # useless expression — notebook marker cells
+    "B904",   # raise-without-from — legacy error handling
+    "E402",   # imports after sys.path
+    "E701",   # multiple statements on one line
+    "E731",   # lambda assignment — legacy notebook patterns
+    "E712",   # true-false comparison
+    "E721",   # type comparison with ==
+    "E722",   # bare except
+    "F401",   # unused import (wildcard re-exports)
+    "F403",   # wildcard imports
+    "F405",   # undefined from wildcard
+    "F541",   # f-string without placeholders — legacy print statements
+    "F811",   # redefinition — notebook cell pattern
+    "F821",   # undefined name — spark/dbutils injected by Databricks runtime
+    "F841",   # unused variable
+    "UP006",  # deprecated typing — legacy code
+    "UP007",  # X | Y annotations — legacy code
+    "UP008",  # super() style — legacy code
+    "UP035",  # deprecated typing imports — legacy code
+]
 
 [tool.mypy]
 python_version = "3.11"
@@ -53,7 +109,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"
-testpaths = ["apps", "libs"]
+testpaths = ["projects", "libs"]
 markers = [
     "unit: fast, no external deps",
     "integration: requires a live Spark or Databricks connection",

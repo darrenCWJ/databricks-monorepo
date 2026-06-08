@@ -1,0 +1,22 @@
+{
+    "completeness":[
+        "EmployeeId"
+    ],
+    "confirmity":{
+        "LastUpdate": "to_date(LastUpdate,'YYYY-MM-dd')  is not null",
+        "EmployeeId":"(EmployeeId like '100%' or EmployeeId like '110%') and len(EmployeeId) = 8"
+    },
+    "validity":{
+        "LastUpdate":"LastUpdate >= '1900-01-01'",
+        "EmployeeId": "EmployeeId between 10000001 and 11099999"
+    },
+    "uniqueness":[
+        "EmployeeId"
+    ],
+    "table_name": "unit_test",
+    "primary_key":"EmployeeId",
+    "schema": "bronze",
+    "domain": "UnitTest",
+    "subdomain": "Test",
+    "source": "Test"
+}

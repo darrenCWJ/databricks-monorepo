@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCAN_DIRS = ["apps", "libs", "dbt"]
+SCAN_DIRS = ["projects", "libs", "dbt"]
 DEFAULT_OWNER = "@cdo/platform-team"
 
 
@@ -137,21 +137,29 @@ def parse_data_architecture(path: Path) -> list[str]:
             in_table = False
         if not in_table:
             continue
-        for match in re.finditer(r"`((?:apps|libs|dbt)/[^`*?]+)`", line):
+        for match in re.finditer(r"`((?:projects|libs|dbt)/[^`*?]+)`", line):
             folders.append(match.group(1).rstrip("/"))
     return folders
 
 
 def scan_disk() -> list[str]:
-    """List all immediate subdirectories under apps/, libs/, dbt/."""
+    """List all project directories under projects/<domain>/<name>/, libs/<name>/, dbt/<name>/."""
     found: list[str] = []
     for top in SCAN_DIRS:
         top_path = REPO_ROOT / top
         if not top_path.is_dir():
             continue
-        for child in sorted(top_path.iterdir()):
-            if child.is_dir():
-                found.append(f"{top}/{child.name}")
+        if top == "projects":
+            for domain in sorted(top_path.iterdir()):
+                if not domain.is_dir() or domain.name.startswith("."):
+                    continue
+                for project in sorted(domain.iterdir()):
+                    if project.is_dir():
+                        found.append(f"{top}/{domain.name}/{project.name}")
+        else:
+            for child in sorted(top_path.iterdir()):
+                if child.is_dir():
+                    found.append(f"{top}/{child.name}")
     return found
 
 
@@ -164,7 +172,7 @@ def compute_actions(f: FolderStatus) -> list[str]:
         actions.append("Folder missing on disk -- create it or remove CODEOWNERS/data-arch entry")
     if not f.in_codeowners:
         actions.append("No owner assigned -- add explicit entry to CODEOWNERS")
-    if f.path.startswith("apps/") and not f.in_data_arch:
+    if f.path.startswith("projects/") and not f.in_data_arch:
         actions.append(
             "Not in data catalogue -- fill AGENTS.md Inputs/Outputs, run `make data-map`"
         )
@@ -396,7 +404,7 @@ def print_report(report: HealthReport) -> int:
         [
             ["Disk", "folder exists on disk"],
             ["CODEOWNERS", "folder has an explicit rule (not just the default *)"],
-            ["Data-Arch", "folder appears in docs/data-architecture.md (apps only)"],
+            ["Data-Arch", "folder appears in docs/data-architecture.md (projects only)"],
             ["AGENTS.md", "AGENTS.md present with Owner, Inputs, Outputs, Schedule"],
             ["Healthy", "ALL four checks above pass"],
             ["Issues", "ANY one check fails -- see Table 4 for what to fix"],
