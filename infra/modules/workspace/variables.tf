@@ -47,25 +47,21 @@ variable "availability_zones" {
 }
 
 variable "managed_services_cmk_arn" {
-  description = "ARN of the KMS CMK for Databricks managed services (notebooks, secrets, query results). Leave empty to skip CMK registration."
+  description = "ARN of the KMS CMK for Databricks managed services (notebooks, secrets, query results)."
   type        = string
-  default     = ""
 }
 
 variable "managed_services_cmk_alias" {
-  description = "Alias name of the managed-services CMK (e.g. alias/foo-cmk-managedservices). Required when managed_services_cmk_arn is set."
+  description = "Alias name of the managed-services CMK (e.g. alias/foo-cmk-managedservices)."
   type        = string
-  default     = ""
 }
 
 variable "storage_cmk_arn" {
-  description = "ARN of the KMS CMK for Databricks storage (S3 root bucket and EBS volumes). Leave empty to skip CMK registration."
+  description = "ARN of the KMS CMK for Databricks storage (S3 root bucket and EBS volumes)."
   type        = string
-  default     = ""
 }
 
 variable "storage_cmk_alias" {
-  description = "Alias name of the storage CMK (e.g. alias/foo-cmk-storage). Required when storage_cmk_arn is set."
+  description = "Alias name of the storage CMK (e.g. alias/foo-cmk-storage)."
   type        = string
-  default     = ""
 }
