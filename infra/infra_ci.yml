@@ -80,7 +80,7 @@ tf-apply:
   dependencies:
     - tf-plan
   rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "feat/infra-migration"
       changes:
         - infra/**/*
       when: manual
