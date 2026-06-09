@@ -34,7 +34,7 @@ locals {
     pda      = { name_env = "dev", name_team = "cdo", name_scope = "catalog", name_domain = "pda" }
     tableau  = { name_env = "dev", name_team = "cdo", name_scope = "catalog", name_domain = "tableau" }
   }
-  
+
 
   # map of catalog_name => { subdir, owner } passed to the storage module
   # owner is set after module.iam is known; catalogs depend on module.iam via depends_on

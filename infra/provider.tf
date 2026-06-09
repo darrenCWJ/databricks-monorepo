@@ -2,9 +2,9 @@ terraform {
   required_version = ">= 1.10.0"
 
   backend "s3" {
-    bucket = "sst-s3-gvt-sdp-databricks-internet-workspace"
-    key    = "terraform/state/terraform.tfstate"
-    region = "ap-southeast-1"
+    bucket       = "sst-s3-gvt-sdp-databricks-internet-workspace"
+    key          = "terraform/state/terraform.tfstate"
+    region       = "ap-southeast-1"
     use_lockfile = true
   }
 

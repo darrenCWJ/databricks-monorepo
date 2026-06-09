@@ -1,8 +1,8 @@
 terraform {
   required_providers {
     databricks = {
-      source                = "databricks/databricks"
-      version               = "~> 1.0"
+      source  = "databricks/databricks"
+      version = "~> 1.0"
       # databricks.mws  → account-level API (groups, users, SPs, workspace assignments)
       # databricks      → workspace-level API (entitlements)
       configuration_aliases = [databricks.mws]

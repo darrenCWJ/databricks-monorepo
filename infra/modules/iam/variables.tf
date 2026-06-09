@@ -28,12 +28,12 @@ variable "service_principals" {
     application_id = optional(string, null)
     # Set display_name for an explicit name, or set the four name_* fields to
     # auto-generate sp_{env}_{team}_{scope}_{domain}
-    display_name               = optional(string, "")
-    name_env                   = optional(string, "")
-    name_team                  = optional(string, "")
-    name_scope                 = optional(string, "")
-    name_domain                = optional(string, "")
-    groups                     = optional(list(string), []) # keys from var.groups
+    display_name = optional(string, "")
+    name_env     = optional(string, "")
+    name_team    = optional(string, "")
+    name_scope   = optional(string, "")
+    name_domain  = optional(string, "")
+    groups       = optional(list(string), []) # keys from var.groups
     # true → SP is assigned ADMIN on the workspace directly (in addition to group membership)
     is_workspace_admin         = optional(bool, false)
     allow_cluster_create       = optional(bool, false)
