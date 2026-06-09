@@ -148,7 +148,7 @@ resource "aws_kms_key" "storage_cmk" {
 
   tags = {
     Name    = "databricks-storage-cmk"
-    Purpose = "Databricks storage encryption (S3 root bucket + EBS)"
+    Purpose = "Databricks storage encryption"
   }
 }
 
