@@ -233,14 +233,27 @@ resource "aws_iam_role" "cross_account" {
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = { AWS = "arn:aws:iam::414351767826:root" }
-      Action    = "sts:AssumeRole"
-      Condition = {
-        StringEquals = { "sts:ExternalId" = var.databricks_account_id }
-      }
-    }]
+    # Each trusted Databricks account gets its own statement with a scoped ExternalId.
+    # Databricks requires the ExternalId to match the account ID of the account
+    # provisioning the workspace — so a second tenant workspace needs its own statement.
+    Statement = concat(
+      [{
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::414351767826:root" }
+        Action    = "sts:AssumeRole"
+        Condition = {
+          StringEquals = { "sts:ExternalId" = var.databricks_account_id }
+        }
+      }],
+      [for id in var.trusted_databricks_account_ids : {
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::414351767826:root" }
+        Action    = "sts:AssumeRole"
+        Condition = {
+          StringEquals = { "sts:ExternalId" = id }
+        }
+      }]
+    )
   })
 
   tags = { Name = "${var.aws_name_prefix}-crossaccount" }

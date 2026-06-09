@@ -13,6 +13,12 @@ variable "databricks_account_id" {
   type        = string
 }
 
+variable "trusted_databricks_account_ids" {
+  description = "Additional Databricks account UUIDs allowed to assume the cross-account role via sts:ExternalId. Use when a second Databricks account (e.g. a partner tenant) provisions a separate workspace against the same AWS cross-account role."
+  type        = list(string)
+  default     = []
+}
+
 variable "aws_region" {
   description = "AWS region where the workspace will be deployed, e.g. ap-southeast-1."
   type        = string

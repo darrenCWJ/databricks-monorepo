@@ -276,6 +276,11 @@ module "workspace" {
   managed_services_cmk_alias = aws_kms_alias.managed_services_cmk.name
   storage_cmk_arn            = aws_kms_key.storage_cmk.arn
   storage_cmk_alias          = aws_kms_alias.storage_cmk.name
+
+  # SDP's dbx-mws-classic module provisions a separate workspace under a different
+  # Databricks account and uses this same cross-account role. Adding their account ID
+  # here so the trust policy accepts their sts:ExternalId during credential validation.
+  trusted_databricks_account_ids = var.trusted_databricks_account_ids
 }
 
 output "internet_workspace_url" {

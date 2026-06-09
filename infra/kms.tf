@@ -48,7 +48,7 @@ resource "aws_kms_key" "managed_services_cmk" {
         Resource = "*"
         Condition = {
           StringEquals = {
-            "aws:PrincipalTag/DatabricksAccountId" = [var.databricks_account_id]
+            "aws:PrincipalTag/DatabricksAccountId" = concat([var.databricks_account_id], var.trusted_databricks_account_ids)
           }
         }
       },
@@ -102,7 +102,7 @@ resource "aws_kms_key" "storage_cmk" {
         Resource = "*"
         Condition = {
           StringEquals = {
-            "aws:PrincipalTag/DatabricksAccountId" = [var.databricks_account_id]
+            "aws:PrincipalTag/DatabricksAccountId" = concat([var.databricks_account_id], var.trusted_databricks_account_ids)
           }
         }
       },
@@ -123,7 +123,7 @@ resource "aws_kms_key" "storage_cmk" {
             "kms:GrantIsForAWSResource" = "true"
           }
           StringEquals = {
-            "aws:PrincipalTag/DatabricksAccountId" = [var.databricks_account_id]
+            "aws:PrincipalTag/DatabricksAccountId" = concat([var.databricks_account_id], var.trusted_databricks_account_ids)
           }
         }
       },

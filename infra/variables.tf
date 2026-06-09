@@ -54,6 +54,12 @@ variable "databricks_account_id" {
   }
 }
 
+variable "trusted_databricks_account_ids" {
+  description = "Additional Databricks account UUIDs whose control plane is allowed to use the CMKs. Added to aws:PrincipalTag/DatabricksAccountId conditions alongside var.databricks_account_id. Use when a partner tenant provisions a workspace against the same KMS keys."
+  type        = list(string)
+  default     = []
+}
+
 variable "cross_account_role_name" {
   description = "Name of the Databricks cross-account IAM role for EC2 provisioning. Not present in this account — only needed for classic compute. Set if/when a cross-account role is created."
   type        = string
