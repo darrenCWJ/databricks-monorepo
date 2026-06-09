@@ -5,6 +5,12 @@ data "aws_iam_roles" "cross_account" {
   name_regex = "^${var.cross_account_role_name}$"
 }
 
+# Singular lookup used by kms.tf to grant the cross-account role EBS access
+# on the storage CMK without creating a circular dependency with module.workspace.
+data "aws_iam_role" "cross_account" {
+  name = "sst-gvt-sdp-databricks-dev-internet-01-crossaccount"
+}
+
 #for creating classic compute for dev environment
 module "dev_compute" {
   source                  = "./modules/compute"
@@ -159,7 +165,7 @@ module "s3_dev_data_bucket" {
   external_location_name  = "dev-data-location"
   catalogs                = local.dev_catalog_storage
   enable_kms              = true
-  kms_key_arn             = aws_kms_key.s3.arn
+  kms_key_arn             = aws_kms_key.storage_cmk.arn
   external_location_grants = {
     "GovTech Admin" = ["READ_FILES", "WRITE_FILES", "MANAGE"]
   }
@@ -178,7 +184,7 @@ module "s3_landing_data_bucket" {
   enable_file_events      = true
   read_only               = true
   enable_kms              = true
-  kms_key_arn             = aws_kms_key.s3.arn
+  kms_key_arn             = aws_kms_key.storage_cmk.arn
   external_location_grants = {
     "GovTech Admin" = ["READ_FILES", "MANAGE"]
   }
@@ -195,7 +201,7 @@ module "s3_autoloader_data_bucket" {
   storage_credential_name = "dev-autoloader-cred"
   external_location_name  = "dev-autoloader-location"
   enable_kms              = true
-  kms_key_arn             = aws_kms_key.s3.arn
+  kms_key_arn             = aws_kms_key.storage_cmk.arn
   external_location_grants = {
     "GovTech Admin" = ["READ_FILES", "WRITE_FILES", "MANAGE"]
   }
@@ -212,7 +218,7 @@ module "s3_workspace_data_bucket" {
   bucket_name_override  = module.workspace.root_bucket_name
   skip_bucket_creation  = true
   enable_kms            = true
-  kms_key_arn           = aws_kms_key.s3.arn
+  kms_key_arn           = aws_kms_key.storage_cmk.arn
 }
 
 #for storage credentials
@@ -265,6 +271,11 @@ module "workspace" {
   vpc_cidr              = "10.0.0.0/16"
   subnet_cidrs          = ["10.0.1.0/24", "10.0.2.0/24"]
   availability_zones    = ["ap-southeast-1a", "ap-southeast-1b"]
+
+  managed_services_cmk_arn   = aws_kms_key.managed_services_cmk.arn
+  managed_services_cmk_alias = aws_kms_alias.managed_services_cmk.name
+  storage_cmk_arn            = aws_kms_key.storage_cmk.arn
+  storage_cmk_alias          = aws_kms_alias.storage_cmk.name
 }
 
 output "internet_workspace_url" {

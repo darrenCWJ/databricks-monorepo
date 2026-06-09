@@ -1,51 +1,16 @@
-# ── Customer Managed Key (CMK) for S3 bucket encryption ──────────
-#
-# Why CMK instead of AWS-managed KMS keys?
-#   - AWS-managed keys (aws/s3) are controlled entirely by AWS. You cannot
-#     set key policies, audit who uses them, or revoke access independently.
-#   - A CMK gives you ownership: you define who can use/manage the key,
-#     enable automatic rotation, and can disable/delete it if needed.
-#
-# One shared CMK is used for all 4 S3 buckets in this project.
-# This is standard practice — fewer keys means a simpler audit trail
-# and one rotation schedule to manage.
+# ── Managed Services CMK ──────────────────────────────────────────────────────
+# Encrypts Databricks control-plane data: notebooks, secrets, query results.
+# Databricks control plane (414351767826) must be able to Encrypt/Decrypt.
 
-resource "aws_kms_key" "s3" {
-  description = "CMK for Databricks S3 buckets (${var.aws_account_id})"
-
-  # Automatically rotates the key's backing cryptographic material every year.
-  # Important: rotation does NOT re-encrypt existing data — S3 keeps a reference
-  # to which key version encrypted each object, so old data is still readable.
-  # New uploads will use the new key material going forward.
-  enable_key_rotation = true
-
-  # KMS keys cannot be deleted immediately. This sets a 30-day waiting window
-  # before deletion completes, giving time to catch accidental deletes.
-  # Minimum is 7 days; 30 is a safer default for production data.
+resource "aws_kms_key" "managed_services_cmk" {
+  description             = "Databricks managed services CMK (${var.aws_account_id})"
+  enable_key_rotation     = true
   deletion_window_in_days = 30
 
-  # ── Key policy ─────────────────────────────────────────────────
-  # A KMS key has TWO access control layers:
-  #   1. The key policy (defined here) — controls who CAN be granted access
-  #   2. IAM policies on individual roles — controls who actually HAS access
-  #
-  # Both layers must allow an action for it to succeed.
-  # Exception: the root account statement below allows IAM policies to
-  # delegate access without needing changes to the key policy each time.
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        # The root account has full control over the key.
-        #
-        # Critically, this statement also "enables IAM" — it means IAM policies
-        # attached to roles in this account can grant those roles access to this
-        # key. Without this, IAM policies alone are not enough; the key policy
-        # itself must explicitly list every role that needs access.
-        #
-        # The Unity Catalog IAM roles (created by the storage module) get their
-        # kms:Encrypt/Decrypt permissions via aws_iam_policy.s3_access, which
-        # works because of this root statement.
         Sid       = "EnableIAMPolicies"
         Effect    = "Allow"
         Principal = { AWS = "arn:aws:iam::${var.aws_account_id}:root" }
@@ -53,22 +18,126 @@ resource "aws_kms_key" "s3" {
         Resource  = "*"
       },
       {
-        # S3 needs to call KMS on behalf of the bucket when enforcing
-        # server-side encryption — for example when replicating objects or
-        # during certain multipart upload operations. The S3 service principal
-        # must be listed directly in the key policy because it is not an IAM
-        # role in your account, so the root statement above does not cover it.
+        Sid    = "AllowDatabricksControlPlane"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::414351767826:root"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:PrincipalTag/DatabricksAccountId" = [var.databricks_account_id]
+          }
+        }
+      },
+    ]
+  })
+
+  tags = {
+    Name    = "databricks-managed-services-cmk"
+    Purpose = "Databricks managed services encryption"
+  }
+}
+
+resource "aws_kms_alias" "managed_services_cmk" {
+  name          = "alias/sdp-databricks-managedservices-dev"
+  target_key_id = aws_kms_key.managed_services_cmk.key_id
+}
+
+# ── Storage CMK ───────────────────────────────────────────────────────────────
+# Encrypts workspace root S3 bucket objects and EBS volumes on cluster nodes.
+# Databricks control plane needs broader grants; cross-account role needs
+# Decrypt/GenerateDataKey for EBS (via ec2 service).
+
+resource "aws_kms_key" "storage_cmk" {
+  description             = "Databricks storage CMK (${var.aws_account_id})"
+  enable_key_rotation     = true
+  deletion_window_in_days = 30
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableIAMPolicies"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${var.aws_account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid    = "AllowDatabricksControlPlaneDBFS"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::414351767826:root"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey",
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:PrincipalTag/DatabricksAccountId" = [var.databricks_account_id]
+          }
+        }
+      },
+      {
+        Sid    = "AllowDatabricksControlPlaneDBFSGrants"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::414351767826:root"
+        }
+        Action = [
+          "kms:CreateGrant",
+          "kms:ListGrants",
+          "kms:RevokeGrant",
+        ]
+        Resource = "*"
+        Condition = {
+          Bool = {
+            "kms:GrantIsForAWSResource" = "true"
+          }
+          StringEquals = {
+            "aws:PrincipalTag/DatabricksAccountId" = [var.databricks_account_id]
+          }
+        }
+      },
+      {
+        Sid    = "AllowCrossAccountRoleEBS"
+        Effect = "Allow"
+        Principal = {
+          AWS = data.aws_iam_role.cross_account.arn
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey*",
+          "kms:CreateGrant",
+          "kms:DescribeKey",
+        ]
+        Resource = "*"
+        Condition = {
+          StringLike = {
+            "kms:ViaService" = "ec2.*.amazonaws.com"
+          }
+        }
+      },
+      {
         Sid       = "S3ServiceEncryption"
         Effect    = "Allow"
         Principal = { Service = "s3.amazonaws.com" }
         Action = [
-          "kms:GenerateDataKey*", # generates the per-object data key
-          "kms:Decrypt",          # needed when S3 re-encrypts (e.g. replication)
+          "kms:GenerateDataKey*",
+          "kms:Decrypt",
         ]
         Resource = "*"
         Condition = {
-          # Scope this permission to S3 operations originating from your account
-          # only, so the S3 service principal cannot use this key for other accounts.
           StringEquals = {
             "kms:CallerAccount" = var.aws_account_id
           }
@@ -78,20 +147,22 @@ resource "aws_kms_key" "s3" {
   })
 
   tags = {
-    Name    = "databricks-s3-cmk"
-    Purpose = "S3 bucket encryption for Databricks Unity Catalog"
+    Name    = "databricks-storage-cmk"
+    Purpose = "Databricks storage encryption (S3 root bucket + EBS)"
   }
 }
 
-# A human-readable alias for the key.
-# The key ID (e.g. mrk-abc123) is not meaningful on its own; the alias makes
-# it easy to identify in the AWS console and in CloudTrail audit logs.
-resource "aws_kms_alias" "s3" {
-  name          = "alias/sdp-databricks-s3-dev"
-  target_key_id = aws_kms_key.s3.key_id
+resource "aws_kms_alias" "storage_cmk" {
+  name          = "alias/sdp-databricks-storage-dev"
+  target_key_id = aws_kms_key.storage_cmk.key_id
 }
 
-output "kms_key_arn" {
-  description = "ARN of the CMK — pass as kms_key_arn to each storage module call"
-  value       = aws_kms_key.s3.arn
+output "kms_managed_services_key_arn" {
+  description = "ARN of the managed-services CMK"
+  value       = aws_kms_key.managed_services_cmk.arn
+}
+
+output "kms_storage_key_arn" {
+  description = "ARN of the storage CMK — pass as kms_key_arn to each storage module call"
+  value       = aws_kms_key.storage_cmk.arn
 }
