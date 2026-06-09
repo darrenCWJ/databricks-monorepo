@@ -64,6 +64,7 @@ resource "aws_iam_policy" "gitlab_ci_terraform" {
           "s3:CreateBucket",
           "s3:DeleteBucket",
           "s3:GetBucketLocation",
+          "s3:GetBucketAcl",
           "s3:GetBucketPolicy",
           "s3:PutBucketPolicy",
           "s3:DeleteBucketPolicy",
@@ -74,8 +75,69 @@ resource "aws_iam_policy" "gitlab_ci_terraform" {
           "s3:PutBucketNotification",
           "s3:GetLifecycleConfiguration",
           "s3:PutLifecycleConfiguration",
+          "s3:GetBucketVersioning",
+          "s3:PutBucketVersioning",
+          "s3:GetEncryptionConfiguration",
+          "s3:PutEncryptionConfiguration",
+          "s3:GetBucketPublicAccessBlock",
+          "s3:PutPublicAccessBlock",
         ]
         Resource = ["arn:aws:s3:::sst-s3-gvt-sdp-databricks-*"]
+      },
+      {
+        Sid    = "EC2ManagementForDatabricksVPC"
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeVpcs",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeInternetGateways",
+          "ec2:DescribeNatGateways",
+          "ec2:DescribeRouteTables",
+          "ec2:DescribeAddresses",
+          "ec2:DescribeVpcEndpoints",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DescribeAvailabilityZones",
+          "ec2:CreateVpc",
+          "ec2:DeleteVpc",
+          "ec2:ModifyVpcAttribute",
+          "ec2:CreateSubnet",
+          "ec2:DeleteSubnet",
+          "ec2:ModifySubnetAttribute",
+          "ec2:CreateInternetGateway",
+          "ec2:DeleteInternetGateway",
+          "ec2:AttachInternetGateway",
+          "ec2:DetachInternetGateway",
+          "ec2:AllocateAddress",
+          "ec2:ReleaseAddress",
+          "ec2:CreateNatGateway",
+          "ec2:DeleteNatGateway",
+          "ec2:CreateRouteTable",
+          "ec2:DeleteRouteTable",
+          "ec2:CreateRoute",
+          "ec2:DeleteRoute",
+          "ec2:AssociateRouteTable",
+          "ec2:DisassociateRouteTable",
+          "ec2:CreateSecurityGroup",
+          "ec2:DeleteSecurityGroup",
+          "ec2:AuthorizeSecurityGroupIngress",
+          "ec2:AuthorizeSecurityGroupEgress",
+          "ec2:RevokeSecurityGroupIngress",
+          "ec2:RevokeSecurityGroupEgress",
+          "ec2:CreateVpcEndpoint",
+          "ec2:DeleteVpcEndpoints",
+          "ec2:ModifyVpcEndpoint",
+          "ec2:CreateTags",
+          "ec2:DeleteTags",
+        ]
+        Resource = ["*"]
+      },
+      {
+        # iam:ListRoles is a list-only action — AWS requires Resource: "*" for all list operations.
+        Sid    = "IAMGlobalList"
+        Effect = "Allow"
+        Action = ["iam:ListRoles"]
+        Resource = ["*"]
       },
       {
         Sid    = "IAMRoleAndPolicyManagement"
@@ -88,6 +150,9 @@ resource "aws_iam_policy" "gitlab_ci_terraform" {
           "iam:TagRole",
           "iam:UntagRole",
           "iam:UpdateAssumeRolePolicy",
+          "iam:PutRolePolicy",
+          "iam:GetRolePolicy",
+          "iam:DeleteRolePolicy",
           "iam:CreatePolicy",
           "iam:DeletePolicy",
           "iam:GetPolicy",
@@ -106,6 +171,7 @@ resource "aws_iam_policy" "gitlab_ci_terraform" {
         Resource = [
           "arn:aws:iam::${var.aws_account_id}:role/unity-catalog-*",
           "arn:aws:iam::${var.aws_account_id}:role/gitlab-ci-*",
+          "arn:aws:iam::${var.aws_account_id}:role/sst-gvt-sdp-databricks-*",
           "arn:aws:iam::${var.aws_account_id}:policy/unity-catalog-*",
           "arn:aws:iam::${var.aws_account_id}:policy/gitlab-ci-*",
         ]

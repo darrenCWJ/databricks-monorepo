@@ -28,21 +28,24 @@ tf_import() {
 echo ""
 echo "=== KMS ==="
 
+# The original key (alias/sdp-databricks-s3-dev) is now tracked as storage_cmk.
+# The moved block in kms.tf handles the rename in state automatically on plan/apply,
+# so this import targets the new resource address directly.
 KEY_ID=$(aws kms describe-key --key-id alias/sdp-databricks-s3-dev \
   --query 'KeyMetadata.KeyId' --output text)
 
 # If a different key landed in state during a failed apply, swap it out.
-if echo "$STATE_LIST" | grep -qF "aws_kms_key.s3"; then
+if echo "$STATE_LIST" | grep -qF "aws_kms_key.storage_cmk"; then
   STATE_KEY=$(terraform state pull | \
-    python3 -c "import json,sys; s=json.load(sys.stdin); r=[r for r in s['resources'] if r['type']=='aws_kms_key' and r['name']=='s3']; print(r[0]['instances'][0]['attributes']['key_id']) if r else print('')")
+    python3 -c "import json,sys; s=json.load(sys.stdin); r=[r for r in s['resources'] if r['type']=='aws_kms_key' and r['name']=='storage_cmk']; print(r[0]['instances'][0]['attributes']['key_id']) if r else print('')")
   if [ -n "$STATE_KEY" ] && [ "$STATE_KEY" != "$KEY_ID" ]; then
     echo "  removing wrong KMS key from state ($STATE_KEY)"
-    terraform state rm aws_kms_key.s3
+    terraform state rm aws_kms_key.storage_cmk
   fi
 fi
 
-tf_import aws_kms_key.s3   "$KEY_ID"
-tf_import aws_kms_alias.s3 "alias/sdp-databricks-s3-dev"
+tf_import aws_kms_key.storage_cmk   "$KEY_ID"
+tf_import aws_kms_alias.storage_cmk "alias/sdp-databricks-s3-dev"
 
 # ── GitLab CI OIDC / IAM ──────────────────────────────────────────────────────
 echo ""

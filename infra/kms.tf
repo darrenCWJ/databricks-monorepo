@@ -1,6 +1,21 @@
+# ── State rename: aws_kms_key.s3 → aws_kms_key.storage_cmk ───────────────────
+# The original single key (aws_kms_key.s3 / alias/sdp-databricks-s3-dev) has been
+# split into two purpose-specific keys. The existing key is preserved as storage_cmk
+# via a moved block below; managed_services_cmk is a net-new resource.
+# These moved blocks can be removed after the first successful apply.
+# moved {
+#   from = aws_kms_key.s3
+#   to   = aws_kms_key.storage_cmk
+# }
+
+# moved {
+#   from = aws_kms_alias.s3
+#   to   = aws_kms_alias.storage_cmk
+# }
+
 # ── Managed Services CMK ──────────────────────────────────────────────────────
 # Encrypts Databricks control-plane data: notebooks, secrets, query results.
-# Databricks control plane (414351767826) must be able to Encrypt/Decrypt.
+# Databricks control plane (414351767826) must be able to Encrypt, Decrypt, GenerateDataKey, and DescribeKey.
 
 resource "aws_kms_key" "managed_services_cmk" {
   description             = "Databricks managed services CMK (${var.aws_account_id})"
@@ -26,6 +41,9 @@ resource "aws_kms_key" "managed_services_cmk" {
         Action = [
           "kms:Encrypt",
           "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey",
         ]
         Resource = "*"
         Condition = {
