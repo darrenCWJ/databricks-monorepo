@@ -257,8 +257,8 @@ resource "aws_iam_role_policy" "cross_account" {
         Sid    = "NonResourceBasedPermissions"
         Effect = "Allow"
         Action = [
+          "ec2:AssignPrivateIpAddresses",
           "ec2:CancelSpotInstanceRequests",
-          "ec2:RequestSpotInstances",
           "ec2:DescribeAvailabilityZones",
           "ec2:DescribeIamInstanceProfileAssociations",
           "ec2:DescribeInstanceStatus",
@@ -266,6 +266,8 @@ resource "aws_iam_role_policy" "cross_account" {
           "ec2:DescribeInternetGateways",
           "ec2:DescribeNatGateways",
           "ec2:DescribeNetworkAcls",
+          "ec2:DescribePrefixLists",
+          "ec2:DescribeReservedInstancesOfferings",
           "ec2:DescribeRouteTables",
           "ec2:DescribeSecurityGroups",
           "ec2:DescribeSpotInstanceRequests",
@@ -276,6 +278,22 @@ resource "aws_iam_role_policy" "cross_account" {
           "ec2:DescribeVpcs",
           "ec2:CreateTags",
           "ec2:DeleteTags",
+          "ec2:GetSpotPlacementScores",
+          "ec2:RequestSpotInstances",
+          "ec2:DescribeFleetHistory",
+          "ec2:ModifyFleet",
+          "ec2:DeleteFleets",
+          "ec2:DescribeFleetInstances",
+          "ec2:DescribeFleets",
+          "ec2:CreateFleet",
+          "ec2:DeleteLaunchTemplate",
+          "ec2:GetLaunchTemplateData",
+          "ec2:CreateLaunchTemplate",
+          "ec2:DescribeLaunchTemplates",
+          "ec2:DescribeLaunchTemplateVersions",
+          "ec2:ModifyLaunchTemplate",
+          "ec2:DeleteLaunchTemplateVersions",
+          "ec2:CreateLaunchTemplateVersion",
         ]
         Resource = ["*"]
       },
@@ -287,7 +305,7 @@ resource "aws_iam_role_policy" "cross_account" {
           "ec2:DisassociateIamInstanceProfile",
           "ec2:ReplaceIamInstanceProfileAssociation",
         ]
-        Resource = ["arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:instance/*"]
+        Resource = "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:instance/*"
         Condition = {
           StringEquals = {
             "ec2:ResourceTag/Vendor" = "Databricks"
@@ -295,32 +313,128 @@ resource "aws_iam_role_policy" "cross_account" {
         }
       },
       {
-        # Required so Databricks can attach an IAM instance profile to cluster EC2 nodes.
-        # Without this, ec2:RunInstances fails with UnauthorizedOperation even when the
-        # RunInstances permission itself is present.
-        Sid    = "AllowPassRoleForInstanceProfiles"
+        Sid    = "AllowEc2RunInstancePerTag"
         Effect = "Allow"
-        Action = ["iam:PassRole"]
-        Resource = ["arn:aws:iam::${var.aws_account_id}:instance-profile/*"]
+        Action = "ec2:RunInstances"
+        Resource = [
+          "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:volume/*",
+          "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:instance/*",
+        ]
+        Condition = {
+          StringEquals = {
+            "aws:RequestTag/Vendor" = "Databricks"
+          }
+        }
       },
       {
-        # RunInstances touches multiple resource types: instances, network interfaces,
-        # volumes, and security groups (all account-scoped) plus AMIs (no account ID in ARN).
-        # Using * is the documented Databricks requirement — cannot be scoped further
-        # because AMI ARNs omit the account ID.
-        Sid      = "AllowEc2RunInstancePerVpc"
+        Sid      = "AllowEc2RunInstanceImagePerTag"
         Effect   = "Allow"
-        Action   = ["ec2:RunInstances"]
-        Resource = ["*"]
+        Action   = "ec2:RunInstances"
+        Resource = "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:image/*"
+        Condition = {
+          StringEquals = {
+            "aws:ResourceTag/Vendor" = "Databricks"
+          }
+        }
       },
       {
-        Sid    = "AllowEc2TerminateInstances"
+        Sid    = "AllowEc2RunInstancePerVPCid"
         Effect = "Allow"
-        Action = ["ec2:TerminateInstances"]
-        Resource = ["arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:instance/*"]
+        Action = "ec2:RunInstances"
+        Resource = [
+          "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:network-interface/*",
+          "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:subnet/*",
+          "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:security-group/*",
+        ]
+        Condition = {
+          StringEquals = {
+            "ec2:vpc" = "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:vpc/${aws_vpc.this.id}"
+          }
+        }
+      },
+      {
+        Sid    = "AllowEc2RunInstanceOtherResources"
+        Effect = "Allow"
+        Action = "ec2:RunInstances"
+        NotResource = [
+          "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:image/*",
+          "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:network-interface/*",
+          "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:subnet/*",
+          "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:security-group/*",
+          "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:volume/*",
+          "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:instance/*",
+        ]
+      },
+      {
+        Sid      = "EC2TerminateInstancesTag"
+        Effect   = "Allow"
+        Action   = ["ec2:TerminateInstances"]
+        Resource = "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:instance/*"
         Condition = {
           StringEquals = {
             "ec2:ResourceTag/Vendor" = "Databricks"
+          }
+        }
+      },
+      {
+        Sid    = "EC2AttachDetachVolumeTag"
+        Effect = "Allow"
+        Action = ["ec2:AttachVolume", "ec2:DetachVolume"]
+        Resource = [
+          "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:instance/*",
+          "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:volume/*",
+        ]
+        Condition = {
+          StringEquals = {
+            "ec2:ResourceTag/Vendor" = "Databricks"
+          }
+        }
+      },
+      {
+        Sid      = "EC2CreateVolumeByTag"
+        Effect   = "Allow"
+        Action   = ["ec2:CreateVolume"]
+        Resource = "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:volume/*"
+        Condition = {
+          StringEquals = {
+            "aws:RequestTag/Vendor" = "Databricks"
+          }
+        }
+      },
+      {
+        Sid      = "EC2DeleteVolumeByTag"
+        Effect   = "Allow"
+        Action   = ["ec2:DeleteVolume"]
+        Resource = "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:volume/*"
+        Condition = {
+          StringEquals = {
+            "ec2:ResourceTag/Vendor" = "Databricks"
+          }
+        }
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["iam:CreateServiceLinkedRole", "iam:PutRolePolicy"]
+        Resource = "arn:aws:iam::*:role/aws-service-role/spot.amazonaws.com/AWSServiceRoleForEC2Spot"
+        Condition = {
+          StringLike = {
+            "iam:AWSServiceName" = "spot.amazonaws.com"
+          }
+        }
+      },
+      {
+        Sid    = "VpcNonresourceSpecificActions"
+        Effect = "Allow"
+        Action = [
+          "ec2:AuthorizeSecurityGroupEgress",
+          "ec2:AuthorizeSecurityGroupIngress",
+          "ec2:RevokeSecurityGroupEgress",
+          "ec2:RevokeSecurityGroupIngress",
+        ]
+        Resource = ["arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:security-group/${aws_security_group.cluster.id}"]
+        Condition = {
+          StringEquals = {
+            "ec2:vpc" = "arn:aws:ec2:${var.aws_region}:${var.aws_account_id}:vpc/${aws_vpc.this.id}"
           }
         }
       },
