@@ -501,6 +501,33 @@ resource "databricks_mws_private_access_settings" "this" {
   public_access_enabled        = true
 }
 
+# ── Databricks MWS: Customer-Managed Keys ─────────────────────────────────────
+resource "databricks_mws_customer_managed_keys" "managed_services" {
+  provider   = databricks.mws
+  account_id = var.databricks_account_id
+  use_cases  = ["MANAGED_SERVICES"]
+  count      = var.managed_services_cmk_arn != "" ? 1 : 0
+
+  aws_key_info {
+    key_arn    = var.managed_services_cmk_arn
+    key_alias  = var.managed_services_cmk_alias
+    key_region = var.aws_region
+  }
+}
+
+resource "databricks_mws_customer_managed_keys" "storage" {
+  provider   = databricks.mws
+  account_id = var.databricks_account_id
+  use_cases  = ["STORAGE"]
+  count      = var.storage_cmk_arn != "" ? 1 : 0
+
+  aws_key_info {
+    key_arn    = var.storage_cmk_arn
+    key_alias  = var.storage_cmk_alias
+    key_region = var.aws_region
+  }
+}
+
 resource "databricks_mws_workspaces" "this" {
   provider       = databricks.mws
   account_id     = var.databricks_account_id
@@ -511,6 +538,9 @@ resource "databricks_mws_workspaces" "this" {
   storage_configuration_id   = databricks_mws_storage_configurations.this.storage_configuration_id
   network_id                 = databricks_mws_networks.this.network_id
   private_access_settings_id = databricks_mws_private_access_settings.this.private_access_settings_id
+
+  managed_services_customer_managed_key_id = length(databricks_mws_customer_managed_keys.managed_services) > 0 ? databricks_mws_customer_managed_keys.managed_services[0].customer_managed_key_id : null
+  storage_customer_managed_key_id          = length(databricks_mws_customer_managed_keys.storage) > 0 ? databricks_mws_customer_managed_keys.storage[0].customer_managed_key_id : null
 
   token {}
 }
