@@ -207,6 +207,8 @@ Python only — add to root `pyproject.toml`:
  ]
 ```
 
+**For notebook-only migrations:** use a minimal pyproject.toml (name + lib dependencies only). Do NOT add to uv workspace members.
+
 ```bash
 uv sync --all-packages
 ```
@@ -220,8 +222,13 @@ Choose the layout matching your app type:
 - **Databricks Job** (batch/streaming): See [file-layouts/job.md](file-layouts/job.md)
 - **Databricks App** (Streamlit/Dash/Flask/React): See [file-layouts/databricks-app.md](file-layouts/databricks-app.md)
 
+**Choosing the right structure:**
+- If the legacy code is a Databricks Job with notebook tasks, migrate as notebook-only style.
+- If it's a Python package or web app, migrate as src-wrapped.
+
 **Rules applying to both types:**
-- All business logic → `src/<package>/`. Entry-point files are thin shims only.
+- For app/api migrations: all business logic → `src/<package>/`. Entry-point files are thin shims only.
+- For pipeline/streaming migrations: logic can remain in notebooks. Use notebook-only style (see ADR-0004).
 - Replace hardcoded catalog/schema with `${var.catalog}` in `bundle.yml`.
 - No secrets in code — use `${secrets.scope.key}` references.
 - Cross-team Python imports are blocked by pre-commit → move to `libs/` or read via Delta.
@@ -318,8 +325,11 @@ grep -rn "prod_catalog\|dev_catalog\|cdo_dev\.\|cdo_prod\." projects/<domain>/<n
 ```
 
 **Thin shim check:**
+
+**Skip this check for notebook-only projects** — notebooks ARE the primary code location.
+
 ```bash
-# Databricks Job:
+# Databricks Job (src-wrapped only):
 wc -l projects/<domain>/<name>/notebooks/*.py        # >20 lines = extract logic to src/
 
 # Databricks App:
