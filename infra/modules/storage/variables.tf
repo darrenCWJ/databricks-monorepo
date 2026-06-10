@@ -62,6 +62,12 @@ variable "databricks_account_id" {
   default     = ""
 }
 
+variable "trusted_databricks_account_ids" {
+  description = "Additional Databricks account UUIDs to trust in the workspace role's assume-role policy. Each gets its own statement with its UUID as ExternalId. Only applies when purpose = 'workspace'."
+  type        = list(string)
+  default     = []
+}
+
 variable "external_location_grants" {
   description = "Map of principal → list of privileges on the external location. Not used when purpose = 'workspace'."
   type        = map(list(string))

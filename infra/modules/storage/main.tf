@@ -348,6 +348,48 @@ resource "null_resource" "update_uc_trust_policy" {
   depends_on = [databricks_storage_credential.this]
 }
 
+# ── Update workspace role trust policy for additional trusted accounts ────────
+# The workspace role's trust policy is created with a single ExternalId
+# (var.databricks_account_id). When trusted_databricks_account_ids is non-empty,
+# this null_resource patches the policy to add one statement per extra account.
+# Uses the same ignore_changes workaround as the UC role update above.
+resource "null_resource" "update_workspace_trust_policy" {
+  count = local.is_workspace && length(var.trusted_databricks_account_ids) > 0 ? 1 : 0
+
+  triggers = {
+    trusted_ids = join(",", sort(var.trusted_databricks_account_ids))
+  }
+
+  provisioner "local-exec" {
+    command = "aws iam update-assume-role-policy --role-name ${var.iam_role_name} --policy-document \"$POLICY\""
+    environment = {
+      POLICY = jsonencode({
+        Version = "2012-10-17"
+        Statement = concat(
+          [{
+            Effect    = "Allow"
+            Principal = { AWS = "arn:aws:iam::414351767826:root" }
+            Action    = "sts:AssumeRole"
+            Condition = {
+              StringEquals = { "sts:ExternalId" = var.databricks_account_id }
+            }
+          }],
+          [for id in var.trusted_databricks_account_ids : {
+            Effect    = "Allow"
+            Principal = { AWS = "arn:aws:iam::414351767826:root" }
+            Action    = "sts:AssumeRole"
+            Condition = {
+              StringEquals = { "sts:ExternalId" = id }
+            }
+          }]
+        )
+      })
+    }
+  }
+
+  depends_on = [aws_iam_role.unity_catalog]
+}
+
 # ── Grants on the external location ──────────────────────────────
 resource "databricks_grants" "external_location" {
   count = !local.is_workspace && length(var.external_location_grants) > 0 ? 1 : 0
