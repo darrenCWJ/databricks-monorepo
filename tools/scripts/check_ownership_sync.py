@@ -135,10 +135,7 @@ def main() -> int:
         )
         return 1
 
-    print(
-        f"OK: {len(co_groups)} groups in CODEOWNERS, "
-        f"{len(refs)} groups referenced elsewhere."
-    )
+    print(f"OK: {len(co_groups)} groups in CODEOWNERS, {len(refs)} groups referenced elsewhere.")
     return 0
 
 
