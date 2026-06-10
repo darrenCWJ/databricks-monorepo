@@ -11,11 +11,19 @@ terraform {
 }
 
 # ── GROUPS (account level) ────────────────────────────────────────────────────
+locals {
+  grp_display_names = {
+    for key, grp in var.groups :
+    key => grp.display_name != "" ? grp.display_name : "grp_${grp.name_env}_${grp.name_team}_${grp.purpose}"
+  }
+}
+
+
 resource "databricks_group" "groups" {
   for_each = var.groups
   provider = databricks.mws
 
-  display_name               = each.value.display_name
+  display_name               = local.grp_display_names[each.key]
   allow_cluster_create       = each.value.allow_cluster_create
   allow_instance_pool_create = each.value.allow_instance_pool_create
   workspace_access           = each.value.workspace_access

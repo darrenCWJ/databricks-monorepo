@@ -64,21 +64,25 @@ module "iam" {
 
   groups = {
     govtech_admin = {
-      display_name               = "GovTech Admin"
-      allow_cluster_create       = true #create clusters
-      allow_instance_pool_create = true #create instance pools
-      workspace_access           = true #access to the workspace UI
+      name_env                   = "dev"
+      name_team                  = "cdo"
+      purpose                    = "workspace_admin"
+      allow_cluster_create       = true
+      allow_instance_pool_create = true
+      workspace_access           = true
       databricks_sql_access      = true
       is_workspace_admin         = true
     }
 
     govtech_sps = {
-      display_name               = "GovTech Service Principals"
-      allow_cluster_create       = true
-      allow_instance_pool_create = false
-      workspace_access           = false
-      databricks_sql_access      = true
+      name_env              = "dev"
+      name_team             = "cdo"
+      purpose               = "service_principals"
+      allow_cluster_create  = true
+      databricks_sql_access = true
+      workspace_access      = false 
     }
+
   }
 
   users = {
@@ -167,8 +171,10 @@ module "s3_dev_data_bucket" {
   enable_kms              = true
   kms_key_arn             = aws_kms_key.storage_cmk.arn
   external_location_grants = {
-    "GovTech Admin" = ["READ_FILES", "WRITE_FILES", "MANAGE"]
+    "grp_dev_cdo_workspace_admin" = ["READ_FILES", "WRITE_FILES", "MANAGE"]
   }
+
+  depends_on = [module.iam]
 }
 
 module "s3_landing_data_bucket" {
@@ -186,8 +192,10 @@ module "s3_landing_data_bucket" {
   enable_kms              = true
   kms_key_arn             = aws_kms_key.storage_cmk.arn
   external_location_grants = {
-    "GovTech Admin" = ["READ_FILES", "MANAGE"]
+    "grp_dev_cdo_workspace_admin" = ["READ_FILES", "MANAGE"]
   }
+
+  depends_on = [module.iam]
 }
 
 module "s3_autoloader_data_bucket" {
@@ -203,8 +211,10 @@ module "s3_autoloader_data_bucket" {
   enable_kms              = true
   kms_key_arn             = aws_kms_key.storage_cmk.arn
   external_location_grants = {
-    "GovTech Admin" = ["READ_FILES", "WRITE_FILES", "MANAGE"]
+    "grp_dev_cdo_workspace_admin" = ["READ_FILES", "WRITE_FILES", "MANAGE"]
   }
+
+  depends_on = [module.iam]
 }
 
 module "s3_workspace_data_bucket" {
@@ -232,6 +242,7 @@ resource "databricks_grants" "dev_data_cred" {
     principal  = module.iam.service_principal_application_ids["sp_dev_cdo_workspace_admin"]
     privileges = ["MANAGE"]
   }
+  depends_on = [module.iam]
 }
 
 resource "databricks_grants" "dev_landing_cred" {
@@ -244,6 +255,7 @@ resource "databricks_grants" "dev_landing_cred" {
     principal  = module.iam.service_principal_application_ids["sp_dev_cdo_workspace_admin"]
     privileges = ["MANAGE"]
   }
+  depends_on = [module.iam]
 }
 
 resource "databricks_grants" "dev_autoloader_cred" {
@@ -256,6 +268,7 @@ resource "databricks_grants" "dev_autoloader_cred" {
     principal  = module.iam.service_principal_application_ids["sp_dev_cdo_workspace_admin"]
     privileges = ["MANAGE"]
   }
+  depends_on = [module.iam]
 }
 
 # ── Databricks workspace provisioning ─────────────────────────────────────────

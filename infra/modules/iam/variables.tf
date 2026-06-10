@@ -1,7 +1,12 @@
 variable "groups" {
   description = "Map of Databricks groups to create at the account level"
   type = map(object({
-    display_name               = string
+    # Set display_name for an explicit name, or set the three name_* fields to
+    # auto-generate grp_{name_env}_{name_team}_{purpose}
+    display_name               = optional(string, "")
+    name_env                   = optional(string, "")
+    name_team                  = optional(string, "")
+    purpose                    = optional(string, "")
     allow_cluster_create       = optional(bool, false)
     allow_instance_pool_create = optional(bool, false)
     workspace_access           = optional(bool, true)
