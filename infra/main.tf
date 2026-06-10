@@ -80,7 +80,7 @@ module "iam" {
       purpose               = "service_principals"
       allow_cluster_create  = true
       databricks_sql_access = true
-      workspace_access      = false 
+      workspace_access      = false
     }
 
   }
@@ -220,15 +220,16 @@ module "s3_autoloader_data_bucket" {
 module "s3_workspace_data_bucket" {
   source = "./modules/storage"
 
-  env                   = "dev"
-  purpose               = "workspace"
-  aws_account_id        = var.aws_account_id
-  iam_role_name         = "unity-catalog-dev-workspace"
-  databricks_account_id = var.databricks_account_id
-  bucket_name_override  = module.workspace.root_bucket_name
-  skip_bucket_creation  = true
-  enable_kms            = true
-  kms_key_arn           = aws_kms_key.storage_cmk.arn
+  env                            = "dev"
+  purpose                        = "workspace"
+  aws_account_id                 = var.aws_account_id
+  iam_role_name                  = "unity-catalog-dev-workspace"
+  databricks_account_id          = var.databricks_account_id
+  trusted_databricks_account_ids = var.trusted_databricks_account_ids
+  bucket_name_override           = module.workspace.root_bucket_name
+  skip_bucket_creation           = true
+  enable_kms                     = true
+  kms_key_arn                    = aws_kms_key.storage_cmk.arn
 }
 
 #for storage credentials

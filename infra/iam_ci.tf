@@ -134,9 +134,9 @@ resource "aws_iam_policy" "gitlab_ci_terraform" {
       },
       {
         # iam:ListRoles is a list-only action — AWS requires Resource: "*" for all list operations.
-        Sid    = "IAMGlobalList"
-        Effect = "Allow"
-        Action = ["iam:ListRoles"]
+        Sid      = "IAMGlobalList"
+        Effect   = "Allow"
+        Action   = ["iam:ListRoles"]
         Resource = ["*"]
       },
       {
