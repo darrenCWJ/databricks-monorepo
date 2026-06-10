@@ -127,7 +127,7 @@ endif
 	@echo "-------------------------------------------------------------"
 	@echo "Proceeding with scaffold: projects/$(DOMAIN)/$(FUNCTION)-$(NAME)"
 	@echo ""
-	uv run python tools/scripts/scaffold.py project --domain $(DOMAIN) --function $(FUNCTION) --name $(NAME) --kind $(KIND)
+	uv run python tools/scripts/scaffold.py project --domain $(DOMAIN) --function $(FUNCTION) --name $(NAME) --kind $(KIND) $(if $(STYLE),--style $(STYLE),)
 	$(MAKE) data-map
 
 .PHONY: new-lib
