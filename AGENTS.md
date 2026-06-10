@@ -44,8 +44,8 @@ See `libs/AGENTS.md` for the registry of available libraries and their exports.
 2. Library API changes go in a dedicated PR; consumers update separately.
 3. New deploy unit = new directory under `projects/<domain>/` with `bundle.yml` + `AGENTS.md`.
 4. Tests must pass locally before opening a PR (`make test P=<path>`).
-5. Notebook code that isn't unit-tested must be wrapped in a thin Python
-   function in `src/` that IS tested.
+5. For src-wrapped projects, notebook code must be wrapped in `src/` and tested.
+   For notebook-only projects (pipelines/streaming/capture), logic can live directly in notebooks.
 6. Do not commit secrets. Use Databricks secret scopes; reference via
    `${secrets.scope.key}` in `bundle.yml`.
 7. **Never push directly to `main` or `release/*`.** All changes go through
