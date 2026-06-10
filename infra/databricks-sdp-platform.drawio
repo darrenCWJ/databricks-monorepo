@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="platform-overview" name="Platform Overview (L2)">
-        <mxGraphModel dx="846" dy="606" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1500" math="0" shadow="0">
+        <mxGraphModel dx="336" dy="356" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1500" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -106,14 +106,17 @@
                 <mxCell id="vpce_scc" value="VPC Endpoint&#xa;SCC Relay&#xa;(DATAPLANE_RELAY)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#8C4FFF;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.privatelink;" parent="1" vertex="1">
                     <mxGeometry x="1195" y="490" width="50" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="xacct_role" value="Cross-Account IAM Role&#xa;gvt_cdo_01_dev-iam-crossaccount&#xa;(EC2 provision / terminate)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#DD344C;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.role;" parent="1" vertex="1">
+                <mxCell id="xacct_role" value="Cross-Account IAM Role&#xa;sst-gvt-sdp-databricks-dev-internet-01-crossaccount&#xa;(EC2 provision / terminate)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#DD344C;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.role;" parent="1" vertex="1">
                     <mxGeometry x="735" y="720" width="50" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="kms_key" value="KMS CMK&#xa;alias/sdp-databricks-s3-dev&#xa;annual auto-rotation" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#DD344C;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.key_management_service;" parent="1" vertex="1">
+                <mxCell id="kms_key" value="KMS CMK (storage)&#xa;alias/sdp-databricks-storage-dev&#xa;S3 + EBS · annual auto-rotation" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#DD344C;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.key_management_service;" parent="1" vertex="1">
                     <mxGeometry x="1688" y="720" width="50" height="50" as="geometry"/>
                 </mxCell>
                 <mxCell id="esm_note" value="ESM: pending pre-prod enablement&#xa;(WoG mandatory — see security.tf)" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;" parent="1" vertex="1">
                     <mxGeometry x="800" y="700" width="195" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="multitenant_note" value="Multi-tenant trust enabled&#xa;Cross-account role + KMS CMKs accept&#xa;additional DatabricksAccountIds via&#xa;var.trusted_databricks_account_ids" style="text;html=1;strokeColor=#7B1FA2;fillColor=#F3E5F5;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;fontColor=#4A148C;" parent="1" vertex="1">
+                    <mxGeometry x="718" y="800" width="220" height="56" as="geometry"/>
                 </mxCell>
                 <mxCell id="uc_roles_bg" value="Unity Catalog IAM Roles" style="swimlane;startSize=28;fillColor=#FFF8E1;strokeColor=#F57F17;fontColor=#E65100;fontSize=11;fontStyle=1;align=left;spacingLeft=8;html=1;" parent="1" vertex="1">
                     <mxGeometry x="880" y="710" width="760" height="120" as="geometry"/>
@@ -133,7 +136,7 @@
                 <mxCell id="s3_bg" value="S3 Buckets  (all CMK-encrypted)" style="swimlane;startSize=28;fillColor=#F1F8E9;strokeColor=#33691E;fontColor=#1B5E20;fontSize=11;fontStyle=1;align=left;spacingLeft=8;html=1;" parent="1" vertex="1">
                     <mxGeometry x="880" y="870" width="760" height="160" as="geometry"/>
                 </mxCell>
-                <mxCell id="s3_ws" value="sst-s3-gvt-sdp-databricks-dev-workspace&#xa;Workspace root + Terraform state" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#3F8624;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" parent="s3_bg" vertex="1">
+                <mxCell id="s3_ws" value="sst-s3-gvt-sdp-databricks-dev-internet-01-root&#xa;Workspace root (DBFS)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#3F8624;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" parent="s3_bg" vertex="1">
                     <mxGeometry x="25" y="40" width="40" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="s3_data" value="sst-s3-gvt-sdp-databricks-dev-data&#xa;12 domain catalogs (UC external loc.)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#3F8624;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" parent="s3_bg" vertex="1">
@@ -363,14 +366,14 @@
                 <mxCell id="vpce_s3_gw" value="S3 Gateway Endpoint&#xa;(S3 + STS access)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#3F8624;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" parent="1" vertex="1">
                     <mxGeometry x="1020" y="490" width="50" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="kms_key2" value="KMS CMK #2&#xa;alias/sdp-databricks-mgd-dev&#xa;managed services" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#DD344C;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.key_management_service;" parent="1" vertex="1">
+                <mxCell id="kms_key2" value="KMS CMK (managed services)&#xa;alias/sdp-databricks-managedservices-dev&#xa;notebooks · secrets · query results" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#DD344C;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.key_management_service;" parent="1" vertex="1">
                     <mxGeometry x="1688" y="830" width="50" height="50" as="geometry"/>
                 </mxCell>
                 <mxCell id="e_kms2_cp" value="encrypts managed svcs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;dashed=1;strokeColor=#DD344C;endArrow=open;endFill=0;" parent="1" source="kms_key2" target="dbx_cp_bg" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="wog_annotation" value="Pre-integrated WoG: Techpass/SSO · GCSOC · ABLR" style="text;html=1;strokeColor=#7B1FA2;fillColor=#F3E5F5;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;fontColor=#4A148C;" parent="1" vertex="1">
-                    <mxGeometry x="1762" y="343" width="350" height="28" as="geometry"/>
+                    <mxGeometry x="1762.5" y="352" width="350" height="28" as="geometry"/>
                 </mxCell>
                 <mxCell id="nacl_label" value="NACL: present" style="text;html=1;strokeColor=#147EBA;fillColor=#E6F3F8;align=center;verticalAlign=middle;rounded=1;fontSize=9;" parent="1" vertex="1">
                     <mxGeometry x="800" y="638" width="110" height="20" as="geometry"/>
@@ -379,7 +382,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="databricks-aws-arch" name="Workspace Detail (L3)">
-        <mxGraphModel dx="2446" dy="606" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1300" math="0" shadow="0">
+        <mxGraphModel dx="1936" dy="356" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1300" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -407,10 +410,10 @@
                 <mxCell id="aws_bg" value="Databricks Data Plane (Agency-Managed, Workspace Level)" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_account;grStroke=0;verticalLabelPosition=top;verticalAlign=bottom;labelBackgroundColor=none;fillColor=#FF99000D;strokeColor=#FF9900;fontSize=13;fontStyle=1;align=left;html=1;" parent="1" vertex="1">
                     <mxGeometry x="40" y="278" width="1520" height="980" as="geometry"/>
                 </mxCell>
-                <mxCell id="xacct" value="Cross-Account IAM Role&lt;br&gt;gvt_cdo_01_dev-iam-crossaccount&lt;br&gt;(provision / terminate EC2)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#DD344C;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.role;" parent="1" vertex="1">
+                <mxCell id="xacct" value="Cross-Account IAM Role&lt;br&gt;sst-gvt-sdp-databricks-dev-internet-01-crossaccount&lt;br&gt;(provision / terminate EC2)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#DD344C;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.role;" parent="1" vertex="1">
                     <mxGeometry x="65" y="320" width="60" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="kms" value="KMS CMK&#xa;S3 encryption" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#DD344C;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.key_management_service;" parent="1" vertex="1">
+                <mxCell id="kms" value="KMS CMK (storage)&#xa;alias/sdp-databricks-storage-dev&#xa;S3 + EBS encryption" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#DD344C;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.key_management_service;" parent="1" vertex="1">
                     <mxGeometry x="1390" y="335" width="60" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="vpc_bg" value="VPC" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_vpc;grStroke=1;verticalLabelPosition=top;verticalAlign=bottom;labelBackgroundColor=none;fillColor=#E6F3F81A;strokeColor=#147EBA;fontSize=12;fontStyle=1;html=1;" parent="1" vertex="1">
@@ -452,7 +455,7 @@
                 <mxCell id="s3_bg" value="S3 Buckets  (all CMK-encrypted)" style="swimlane;startSize=28;fillColor=#F1F8E9;strokeColor=#33691E;fontColor=#1B5E20;fontSize=12;fontStyle=1;align=left;spacingLeft=8;html=1;" parent="1" vertex="1">
                     <mxGeometry x="1170" y="430" width="310" height="790" as="geometry"/>
                 </mxCell>
-                <mxCell id="s3_ws" value="sst-s3-…-dev-workspace&lt;br&gt;workspace storage" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#3F8624;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;fontStyle=0;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" parent="s3_bg" vertex="1">
+                <mxCell id="s3_ws" value="sst-s3-gvt-sdp-databricks-dev-internet-01-root&lt;br&gt;workspace root (DBFS)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#3F8624;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;fontStyle=0;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" parent="s3_bg" vertex="1">
                     <mxGeometry x="125" y="58" width="60" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="s3_data" value="sst-s3-…-dev-data&#xa;UC external location · 12 catalogs" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#3F8624;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;fontStyle=0;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" parent="s3_bg" vertex="1">
@@ -635,6 +638,367 @@
                 </mxCell>
                 <mxCell id="23" value="SQL Warehouses" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#ED7100;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ec2;" parent="1" vertex="1">
                     <mxGeometry x="515" y="617.5" width="40" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="kms_ms" value="KMS CMK (managed services)&#xa;alias/sdp-databricks-managedservices-dev&#xa;notebooks · secrets · query results" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#DD344C;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.key_management_service;" parent="1" vertex="1">
+                    <mxGeometry x="1210" y="335" width="60" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_kms_ms" value="encrypts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;endFill=0;strokeColor=#DD344C;fontSize=10;" parent="1" source="uc_meta" target="kms_ms" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1180" y="179"/>
+                            <mxPoint x="1240" y="179"/>
+                            <mxPoint x="1240" y="335"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="multitenant_note" value="Multi-tenant trust enabled&#xa;Cross-account role + KMS CMKs accept&#xa;additional DatabricksAccountIds via&#xa;var.trusted_databricks_account_ids" style="text;html=1;strokeColor=#7B1FA2;fillColor=#F3E5F5;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;fontColor=#4A148C;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="395" width="200" height="56" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="data-flow" name="Data Flow (L2)">
+        <mxGraphModel dx="1148" dy="445" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3000" pageHeight="1050" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="df_hdr_src" value="Source / Destinations" style="text;html=1;strokeColor=#006EAF;fillColor=#dae8fc;align=center;verticalAlign=middle;fontStyle=1;fontSize=13;rounded=1;" parent="1" vertex="1">
+                    <mxGeometry x="10" y="10" width="240" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_hdr_int" value="Integration" style="text;html=1;strokeColor=#006EAF;fillColor=#dae8fc;align=center;verticalAlign=middle;fontStyle=1;fontSize=13;rounded=1;" parent="1" vertex="1">
+                    <mxGeometry x="260" y="10" width="450" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_hdr_spt" value="Storage, Processing &amp; Transformation" style="text;html=1;strokeColor=#006EAF;fillColor=#dae8fc;align=center;verticalAlign=middle;fontStyle=1;fontSize=13;rounded=1;" parent="1" vertex="1">
+                    <mxGeometry x="720" y="10" width="1260" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_hdr_con" value="Consumption" style="text;html=1;strokeColor=#006EAF;fillColor=#dae8fc;align=center;verticalAlign=middle;fontStyle=1;fontSize=13;rounded=1;" parent="1" vertex="1">
+                    <mxGeometry x="1990" y="10" width="230" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_legend_bg" value="Legend" style="swimlane;startSize=24;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=11;fontStyle=1;align=left;spacingLeft=8;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="10" y="440" width="240" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_leg1" value="→  Data Ingestion" style="text;html=1;fontSize=10;align=left;fontColor=#33691E;fontStyle=1;" parent="df_legend_bg" vertex="1">
+                    <mxGeometry x="8" y="28" width="220" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_leg2" value="←  Data Sharing (Deltashare)" style="text;html=1;fontSize=10;align=left;fontColor=#006EAF;fontStyle=1;" parent="df_legend_bg" vertex="1">
+                    <mxGeometry x="8" y="48" width="220" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_leg3" value="→  Transform Data (medallion)" style="text;html=1;fontSize=10;align=left;fontColor=#ED7100;fontStyle=1;" parent="df_legend_bg" vertex="1">
+                    <mxGeometry x="8" y="68" width="220" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_leg4" value="- -  Metadata / orchestration flow" style="text;html=1;fontSize=10;align=left;fontColor=#7B1FA2;fontStyle=1;" parent="df_legend_bg" vertex="1">
+                    <mxGeometry x="8" y="88" width="220" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_src1" value="On-Prem / Cross-Cloud&#xa;SFTP  |  API" style="rounded=1;arcSize=15;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;align=center;fontSize=11;fontStyle=1;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="15" y="80" width="220" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_src2" value="Inter Agency&#xa;SFTP  |  API  |  Streaming" style="rounded=1;arcSize=15;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;align=center;fontSize=11;fontStyle=1;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="15" y="160" width="220" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_src3" value="Intra Agency&#xa;SFTP  |  API  |  Streaming&#xa;Direct Connections  |  CDC" style="rounded=1;arcSize=15;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;align=center;fontSize=11;fontStyle=1;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="15" y="240" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_src4" value="Outside GCC — Internet&#xa;SFTP  |  API  |  SaaS Endpoints" style="rounded=1;arcSize=15;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;align=center;fontSize=11;fontStyle=1;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="15" y="330" width="220" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_src5" value="Inter / Intra Agency&#xa;Deltashare (inbound)" style="rounded=1;arcSize=15;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;fontSize=11;fontStyle=1;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="15" y="700" width="220" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_src6" value="Outside GCC — Internet&#xa;Deltashare  |  SaaS Endpoints" style="rounded=1;arcSize=15;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;fontSize=11;fontStyle=1;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="15" y="775" width="220" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_ctrl_vpc" value="Agency Control VPC (NON-GEN)" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_vpc;grStroke=1;verticalLabelPosition=top;verticalAlign=bottom;labelBackgroundColor=none;fillColor=#E6F3F81A;strokeColor=#147EBA;fontSize=10;fontStyle=1;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="260" y="60" width="210" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_tgw" value="Transit Gateway" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#8C4FFF;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.transit_gateway;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="95" width="40" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_dx" value="Direct Connect&#xa;/ VPN" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#8C4FFF;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.direct_connect;" parent="1" vertex="1">
+                    <mxGeometry x="390" y="95" width="40" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_sftp" value="AWS Transfer&#xa;Family (SFTP)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#E7157B;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.transfer_family;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="210" width="40" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_apigw" value="API Gateway" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#E7157B;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.api_gateway;" parent="1" vertex="1">
+                    <mxGeometry x="390" y="210" width="40" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_lfc_managed" value="Lakeflow Connect&#xa;Managed Connectors&#xa;(CDC · DB · SaaS)" style="rounded=1;arcSize=15;fillColor=#E1D5E7;strokeColor=#9673A6;fontColor=#4A148C;align=center;fontSize=9;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="260" y="330" width="210" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_lfc_streaming" value="Lakeflow Connect&#xa;Standard Connectors&#xa;(Kafka · Kinesis · Streaming)" style="rounded=1;arcSize=15;fillColor=#E1D5E7;strokeColor=#9673A6;fontColor=#4A148C;align=center;fontSize=9;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="260" y="405" width="210" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_zerobus" value="Zerobus Ingest&#xa;(high-throughput API push)" style="rounded=1;arcSize=15;fillColor=#E1D5E7;strokeColor=#9673A6;fontColor=#4A148C;align=center;fontSize=9;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="260" y="480" width="210" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_gitlab" value="GitLab CI&#xa;(DAB deploy · OIDC → Terraform)" style="rounded=1;arcSize=15;fillColor=#fff2cc;strokeColor=#d6b656;align=center;fontSize=9;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="260" y="560" width="210" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_lh_bg" value="LAKEHOUSE STORAGE (OBJECT STORAGE)&#xa;Unity Catalog governed  ·  CMK-encrypted (storage + managed-services)  ·  Delta Lake  ·  CCE-SN exception approved" style="rounded=1;arcSize=3;fillColor=#F1F8E9;strokeColor=#33691E;fontColor=#1B5E20;fontSize=11;fontStyle=1;verticalAlign=top;align=center;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="490" y="55" width="1480" height="870" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_s3_land" value="Landing Bucket&#xa;sst-s3-…-dev-landing&#xa;(read-only · file events)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#3F8624;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" parent="1" vertex="1">
+                    <mxGeometry x="530" y="100" width="50" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_sqs" value="SQS / SNS&#xa;file events" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#E7157B;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.sqs;" parent="1" vertex="1">
+                    <mxGeometry x="660" y="100" width="50" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_autoloader" value="Auto Loader&#xa;(cloudFiles · schema&#xa;inference + evolution)" style="rounded=1;arcSize=15;fillColor=#FFF8E1;strokeColor=#F57F17;fontColor=#E65100;align=center;fontSize=9;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="780" y="90" width="170" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_s3_auto" value="Autoloader Staging&#xa;sst-s3-…-dev-autoloader" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#3F8624;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" parent="1" vertex="1">
+                    <mxGeometry x="790" y="210" width="40" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_bronze" value="Bronze&#xa;Raw Delta tables&#xa;schema-on-read · no transforms&#xa;12 domain catalogs (cdo_dev.*)" style="rounded=1;arcSize=20;fillColor=#CD853F;strokeColor=#8B4513;fontColor=#ffffff;align=center;fontSize=10;fontStyle=1;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="1120" y="210" width="200" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_silver" value="Silver&#xa;Cleaned · Deduplicated · Typed&#xa;Column masks applied&#xa;(security.mask_pii)" style="rounded=1;arcSize=20;fillColor=#607D8B;strokeColor=#37474F;fontColor=#ffffff;align=center;fontSize=10;fontStyle=1;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="1280" y="310" width="200" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_gold" value="Gold&#xa;Aggregated · Business-ready&#xa;Row filters applied&#xa;(filter_by_cost_centre)" style="rounded=1;arcSize=20;fillColor=#F57F17;strokeColor=#E65100;fontColor=#ffffff;align=center;fontSize=10;fontStyle=1;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="1550" y="310" width="200" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_jobs" value="Lakeflow Jobs / Databricks Jobs — DAB-deployed via GitLab CI/CD&#xa;bronze_to_silver  →  silver_to_gold  (Spark Declarative Pipelines)" style="rounded=1;arcSize=15;fillColor=#d5e8d4;strokeColor=#82b366;align=center;fontSize=10;fontStyle=1;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="1010" y="470" width="740" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_uc_gov" value="Unity Catalog  ·  RBAC  ·  Column Masking  ·  Row-Level Security  ·  ABAC (Governed Tags)  ·  Lineage  ·  Audit Logging  ·  Anomaly Detection  ·  Data Profiling" style="rounded=1;arcSize=5;fillColor=#E1D5E7;strokeColor=#9673A6;fontColor=#4A148C;fontSize=10;fontStyle=1;align=center;verticalAlign=middle;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="545" width="1460" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_dq" value="Data Quality&#xa;Lakeflow Expectations&#xa;expect / expect_or_drop / expect_or_fail&#xa;Data Profiling · Anomaly Detection" style="rounded=1;arcSize=15;fillColor=#FFF8E1;strokeColor=#F57F17;fontColor=#E65100;align=center;fontSize=9;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="510" y="610" width="240" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_sec" value="Security Controls&#xa;Column Masking: security.mask_pii&#xa;Row Filters: filter_by_cost_centre&#xa;ABAC · check_pii_contract.py" style="rounded=1;arcSize=15;fillColor=#FFEBEE;strokeColor=#C62828;fontColor=#B71C1C;align=center;fontSize=9;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="790" y="610" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_serverless" value="Serverless Compute&#xa;★ primary production path&#xa;NCC · no VPC required" style="rounded=1;arcSize=10;fillColor=#E8EAF6;strokeColor=#3949AB;fontColor=#1A237E;align=center;fontSize=9;fontStyle=1;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="1280" y="610" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_mlflow" value="MLflow&#xa;Model Registry&#xa;+ AI Model Endpoints" style="rounded=1;arcSize=15;fillColor=#E8EAF6;strokeColor=#3949AB;fontColor=#1A237E;align=center;fontSize=9;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="1550" y="610" width="170" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_s3_data" value="Data Bucket&#xa;sst-s3-…-dev-data" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#3F8624;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" parent="1" vertex="1">
+                    <mxGeometry x="530" y="720" width="50" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_s3_ws" value="Workspace Root&#xa;sst-s3-…-internet-01-root" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#3F8624;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" parent="1" vertex="1">
+                    <mxGeometry x="660" y="720" width="50" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_deltashare_out" value="Deltashare (outbound)&#xa;Inter / Intra Agency data sharing" style="rounded=1;arcSize=15;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;fontSize=9;html=1;whiteSpace=wrap;" parent="1" vertex="1">
+                    <mxGeometry x="1550" y="720" width="200" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_audit" value="Audit trail: system.access.audit → audit_log.py → WORM S3  (IM8 · SOC2)" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="815" width="400" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_esm" value="ESM: pending pre-prod enablement (WoG mandatory)" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="860" width="300" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_con_analyst" value="Data Analysts&#xa;/ Engineers" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#232F3E;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.aws4.user;" parent="1" vertex="1">
+                    <mxGeometry x="2080" y="80" width="50" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_seed" value="SEED" style="rounded=1;arcSize=20;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;fontSize=12;fontStyle=1;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="2070" y="200" width="100" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_gsib" value="GSIB" style="rounded=1;arcSize=20;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;fontSize=12;fontStyle=1;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="2070" y="265" width="100" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_comet" value="COMET" style="rounded=1;arcSize=20;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;fontSize=12;fontStyle=1;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="2070" y="330" width="100" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_bi" value="BI / Dashboard&#xa;Tools" style="rounded=1;arcSize=20;fillColor=#d5e8d4;strokeColor=#82b366;align=center;fontSize=11;fontStyle=1;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="2060" y="400" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_ai_endpt" value="AI Model&#xa;Endpoints" style="rounded=1;arcSize=20;fillColor=#E8EAF6;strokeColor=#3949AB;fontColor=#1A237E;align=center;fontSize=11;fontStyle=1;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="2060" y="470" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_e_src1_tgw" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#33691E;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_src1" target="df_tgw" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_e_src2_tgw" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#33691E;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_src2" target="df_tgw" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="245" y="185"/>
+                            <mxPoint x="245" y="115"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_src3_dx" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#33691E;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_src3" target="df_dx" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="330" y="270"/>
+                            <mxPoint x="330" y="115"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_src4_apigw" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#33691E;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="df_src4" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="313" y="300" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="250" y="355"/>
+                            <mxPoint x="250" y="320"/>
+                            <mxPoint x="313" y="320"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_tgw_sftp" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#33691E;strokeWidth=1;endArrow=open;endFill=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" target="df_sftp" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="300" y="150" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_sftp_land" value="upload" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;strokeColor=#33691E;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_sftp" target="df_s3_land" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="340" y="230"/>
+                            <mxPoint x="340" y="200"/>
+                            <mxPoint x="450" y="200"/>
+                            <mxPoint x="450" y="125"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_apigw_lfc" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#33691E;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_apigw" target="df_lfc_managed" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="480" y="230"/>
+                            <mxPoint x="480" y="357"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_land_sqs" value="file events" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;strokeColor=#33691E;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_s3_land" target="df_sqs" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_e_sqs_auto" value="trigger" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;strokeColor=#33691E;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_sqs" target="df_autoloader" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_e_auto_bronze" value="ingest raw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;strokeColor=#ED7100;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_autoloader" target="df_bronze" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1090" y="122"/>
+                            <mxPoint x="1090" y="300"/>
+                            <mxPoint x="1010" y="300"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_lfc_mgd_bronze" value="CDC / batch" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;strokeColor=#ED7100;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" parent="1" source="df_lfc_managed" target="df_bronze" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="985" y="357"/>
+                            <mxPoint x="985" y="380"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_lfc_str_bronze" value="streaming" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;strokeColor=#ED7100;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.85;entryDx=0;entryDy=0;" parent="1" source="df_lfc_streaming" target="df_bronze" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="990" y="432"/>
+                            <mxPoint x="990" y="395"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_zerobus_bronze" value="API push" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;strokeColor=#ED7100;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" parent="1" source="df_zerobus" target="df_bronze" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="995" y="505"/>
+                            <mxPoint x="995" y="410"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_b_s" value="cleanse · dedup · mask" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;strokeColor=#ED7100;strokeWidth=3;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_bronze" target="df_silver" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_e_s_g" value="aggregate · filter · enrich" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;strokeColor=#ED7100;strokeWidth=3;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_silver" target="df_gold" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_e_gitlab_jobs" value="deploy / trigger" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;dashed=1;strokeColor=#7B1FA2;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_gitlab" target="df_jobs" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="490" y="582"/>
+                            <mxPoint x="490" y="495"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_uc_b" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;strokeColor=#9673A6;strokeWidth=1;endArrow=open;endFill=0;exitX=0.2;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="df_uc_gov" target="df_bronze" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_e_uc_s" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;strokeColor=#9673A6;strokeWidth=1;endArrow=open;endFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="df_uc_gov" target="df_silver" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_e_uc_g" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;strokeColor=#9673A6;strokeWidth=1;endArrow=open;endFill=0;exitX=0.8;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="df_uc_gov" target="df_gold" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_e_gold_analyst" value="SQL / Notebook" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;strokeColor=#ED7100;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.15;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_gold" target="df_con_analyst" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1975" y="325"/>
+                            <mxPoint x="1975" y="110"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_gold_seed" value="SQL / JDBC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;strokeColor=#ED7100;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_gold" target="df_seed" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1980" y="340"/>
+                            <mxPoint x="1980" y="220"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_gold_gsib" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#ED7100;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_gold" target="df_gsib" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1985" y="360"/>
+                            <mxPoint x="1985" y="285"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_gold_comet" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#ED7100;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.65;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_gold" target="df_comet" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1990" y="375"/>
+                            <mxPoint x="1990" y="350"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_gold_bi" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#ED7100;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_gold" target="df_bi" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1970" y="390"/>
+                            <mxPoint x="1970" y="425"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_gold_ml" value="feature data" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;strokeColor=#ED7100;strokeWidth=2;endArrow=open;endFill=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="df_gold" target="df_mlflow" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="df_e_ml_endpt" value="serve" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;strokeColor=#ED7100;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_mlflow" target="df_ai_endpt" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1965" y="640"/>
+                            <mxPoint x="1965" y="495"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_ds_out" value="Deltashare" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;strokeColor=#006EAF;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="df_deltashare_out" target="df_seed" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="2220" y="745"/>
+                            <mxPoint x="2220" y="220"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_ds_in1" value="Deltashare inbound" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;strokeColor=#006EAF;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.2;entryY=1;entryDx=0;entryDy=0;" parent="1" source="df_src5" target="df_bronze" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="700" y="725"/>
+                            <mxPoint x="700" y="410"/>
+                            <mxPoint x="1050" y="410"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="df_e_ds_in2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#006EAF;strokeWidth=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.1;entryY=1;entryDx=0;entryDy=0;" parent="1" source="df_src6" target="df_bronze" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="710" y="800"/>
+                            <mxPoint x="710" y="420"/>
+                            <mxPoint x="1030" y="420"/>
+                        </Array>
+                    </mxGeometry>
                 </mxCell>
             </root>
         </mxGraphModel>
