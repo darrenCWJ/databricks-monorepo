@@ -194,7 +194,7 @@ endif
 ci-local: ## Run full CI locally
 	$(MAKE) lint
 	$(MAKE) test
-	@for bundle in $$(find apps -maxdepth 2 -name bundle.yml -exec dirname {} \;); do \
+	@for bundle in $$(find projects -maxdepth 3 -name bundle.yml -exec dirname {} \;); do \
 	  echo ">>> validating $$bundle"; \
 	  $(MAKE) bundle-validate P=$$bundle; \
 	done

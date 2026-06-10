@@ -41,6 +41,9 @@ prerelease = "disallow"
 line-length = 100
 target-version = "py311"
 
+[tool.ruff.format]
+exclude = ["projects/**/notebooks/*.py"]
+
 [tool.ruff.lint]
 select = ["E", "F", "I", "S", "B", "UP"]
 ignore = ["S101", "S603", "S607", "S112", "E501", "F403", "F405"]
@@ -67,6 +70,11 @@ ignore = ["S101", "S603", "S607", "S112", "E501", "F403", "F405"]
     "F402",   # import shadowed by loop var
 ]
 "libs/de_toolbox/_legacy/**" = ["ALL"]
+"projects/**/notebooks/*.py" = [
+    "F821",   # undefined names — dbutils/spark injected by Databricks runtime
+    "E402",   # imports not at top — notebook cells reorder imports
+    "I001",   # import sorting — cell boundaries break isort
+]
 "libs/de_databricks/**" = [
     "S105",   # hardcoded password — false positive on variable names
     "S106",   # hardcoded password in test fixtures
@@ -116,6 +124,11 @@ disable_error_code = ["name-defined", "no-untyped-def", "no-untyped-call"]
 module = ["de_databricks.*"]
 strict = false
 disable_error_code = ["name-defined", "no-untyped-def", "no-untyped-call"]
+
+[[tool.mypy.overrides]]
+module = ["projects.*"]
+strict = false
+disable_error_code = ["name-defined", "no-untyped-def", "type-arg"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"
