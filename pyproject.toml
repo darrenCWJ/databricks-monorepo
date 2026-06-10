@@ -107,6 +107,16 @@ explicit_package_bases = true
 module = ["pyspark.*", "databricks.*"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["de_toolbox.*"]
+strict = false
+disable_error_code = ["name-defined", "no-untyped-def", "no-untyped-call"]
+
+[[tool.mypy.overrides]]
+module = ["de_databricks.*"]
+strict = false
+disable_error_code = ["name-defined", "no-untyped-def", "no-untyped-call"]
+
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"
 testpaths = ["projects", "libs"]
