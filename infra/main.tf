@@ -1,14 +1,7 @@
-# Look up the pre-existing Databricks cross-account IAM role (EC2 provisioning).
-# This role is not managed here — it was created at workspace setup time.
-# Uses the plural form so plan/apply succeeds even if the role is absent.
-data "aws_iam_roles" "cross_account" {
-  name_regex = "^${var.cross_account_role_name}$"
-}
-
-# Singular lookup used by kms.tf to grant the cross-account role EBS access
-# on the storage CMK without creating a circular dependency with module.workspace.
-data "aws_iam_role" "cross_account" {
-  name = "sst-gvt-sdp-databricks-dev-internet-01-crossaccount"
+locals {
+  workspace_aws_name_prefix         = "sst-gvt-sdp-databricks-dev-internet-01"
+  workspace_cross_account_role_name = "${local.workspace_aws_name_prefix}-crossaccount"
+  workspace_cross_account_role_arn  = "arn:aws:iam::${var.aws_account_id}:role/${local.workspace_cross_account_role_name}"
 }
 
 #for creating classic compute for dev environment
@@ -278,7 +271,7 @@ module "workspace" {
   providers = { databricks.mws = databricks.mws }
 
   workspace_name        = "gvt_cdo_dev_internet_01"
-  aws_name_prefix       = "sst-gvt-sdp-databricks-dev-internet-01"
+  aws_name_prefix       = local.workspace_aws_name_prefix
   databricks_account_id = var.databricks_account_id
   aws_region            = var.aws_region
   aws_account_id        = var.aws_account_id

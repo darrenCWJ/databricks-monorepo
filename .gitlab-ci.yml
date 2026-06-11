@@ -28,7 +28,7 @@ lint:
   stage: lint
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "feat/infra-migration"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH =~ /^release\//
     - if: $CI_COMMIT_BRANCH =~ /^feature\//
     - if: $CI_COMMIT_BRANCH =~ /^hotfix\//
@@ -101,7 +101,7 @@ compute-affected:
     expire_in: 1 day
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "feat/infra-migration"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH =~ /^release\//
     - if: $CI_COMMIT_BRANCH =~ /^feature\//
     - if: $CI_COMMIT_BRANCH =~ /^hotfix\//
@@ -115,7 +115,7 @@ pip-audit:
     - uvx pip-audit --requirement <(pip freeze 2>/dev/null || true) || uvx pip-audit
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "feat/infra-migration"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH =~ /^release\//
     - if: $CI_COMMIT_BRANCH =~ /^feature\//
     - if: $CI_COMMIT_BRANCH =~ /^hotfix\//
@@ -143,7 +143,7 @@ ruff-security:
       fi
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "feat/infra-migration"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH =~ /^feature\//
     - if: $CI_COMMIT_BRANCH =~ /^hotfix\//
 
@@ -159,7 +159,7 @@ gitleaks:
     - gitleaks detect --source . --no-banner --no-git
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "feat/infra-migration"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH =~ /^release\//
     - if: $CI_COMMIT_BRANCH =~ /^feature\//
     - if: $CI_COMMIT_BRANCH =~ /^hotfix\//
@@ -198,7 +198,7 @@ bundle-validate:
       fi
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "feat/infra-migration"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH =~ /^feature\//
     - if: $CI_COMMIT_BRANCH =~ /^hotfix\//
 

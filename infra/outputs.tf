@@ -21,6 +21,6 @@ output "uc_iam_role_arns" {
 }
 
 output "cross_account_role_arn" {
-  description = "ARN of the pre-existing Databricks cross-account IAM role (EC2 provisioning, not managed here). 'not found' if absent."
-  value       = length(data.aws_iam_roles.cross_account.arns) > 0 ? tolist(data.aws_iam_roles.cross_account.arns)[0] : "'${var.cross_account_role_name}' not found in this account"
+  description = "ARN of the Databricks cross-account IAM role used for EC2 provisioning."
+  value       = local.workspace_cross_account_role_arn
 }

@@ -131,7 +131,7 @@ resource "aws_kms_key" "storage_cmk" {
         Sid    = "AllowCrossAccountRoleEBS"
         Effect = "Allow"
         Principal = {
-          AWS = data.aws_iam_role.cross_account.arn
+          AWS = "arn:aws:iam::${var.aws_account_id}:root"
         }
         Action = [
           "kms:Decrypt",
@@ -141,6 +141,9 @@ resource "aws_kms_key" "storage_cmk" {
         ]
         Resource = "*"
         Condition = {
+          ArnEquals = {
+            "aws:PrincipalArn" = local.workspace_cross_account_role_arn
+          }
           StringLike = {
             "kms:ViaService" = "ec2.*.amazonaws.com"
           }
