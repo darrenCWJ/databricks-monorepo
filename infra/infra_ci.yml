@@ -15,6 +15,7 @@
 #   TF_VAR_aws_account_id        AWS account ID
 #   TF_VAR_gitlab_url            GitLab hostname without scheme (e.g. sgts.gitlab-dedicated.com)
 #   TF_VAR_gitlab_project_path   Full GitLab project path (e.g. wog/gvt/dart/gvt-dsaid-dart/mono-dev)
+#   TF_VAR_trusted_databricks_account_ids Optional list literal for extra Databricks account IDs
 
 variables:
   TF_ROOT: ${CI_PROJECT_DIR}/infra
@@ -61,7 +62,12 @@ tf-plan:
   tags:
     - linux-small-amd64
   script:
-    - terraform plan -var-file=terraform.tfvars -out=${CI_PROJECT_DIR}/tfplan
+    - |
+      PLAN_ARGS="-var-file=terraform.tfvars -var=gitlab_url=${CI_SERVER_HOST} -var=gitlab_project_path=${CI_PROJECT_PATH}"
+      if [ -n "${TF_VAR_trusted_databricks_account_ids:-}" ]; then
+        PLAN_ARGS="$PLAN_ARGS -var=trusted_databricks_account_ids=${TF_VAR_trusted_databricks_account_ids}"
+      fi
+      terraform plan $PLAN_ARGS -out=${CI_PROJECT_DIR}/tfplan
   artifacts:
     paths:
       - tfplan
@@ -76,7 +82,7 @@ tf-apply:
   tags:
     - linux-small-amd64
   script:
-    - terraform apply -var-file=terraform.tfvars -auto-approve ${CI_PROJECT_DIR}/tfplan
+    - terraform apply -auto-approve ${CI_PROJECT_DIR}/tfplan
   dependencies:
     - tf-plan
   rules:
