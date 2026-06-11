@@ -127,7 +127,7 @@ endif
 	@echo "-------------------------------------------------------------"
 	@echo "Proceeding with scaffold: projects/$(DOMAIN)/$(FUNCTION)-$(NAME)"
 	@echo ""
-	uv run python tools/scripts/scaffold.py project --domain $(DOMAIN) --function $(FUNCTION) --name $(NAME) --kind $(KIND)
+	uv run python tools/scripts/scaffold.py project --domain $(DOMAIN) --function $(FUNCTION) --name $(NAME) --kind $(KIND) $(if $(STYLE),--style $(STYLE),)
 	$(MAKE) data-map
 
 .PHONY: new-lib
@@ -194,7 +194,7 @@ endif
 ci-local: ## Run full CI locally
 	$(MAKE) lint
 	$(MAKE) test
-	@for bundle in $$(find apps -maxdepth 2 -name bundle.yml -exec dirname {} \;); do \
+	@for bundle in $$(find projects -maxdepth 3 -name bundle.yml -exec dirname {} \;); do \
 	  echo ">>> validating $$bundle"; \
 	  $(MAKE) bundle-validate P=$$bundle; \
 	done

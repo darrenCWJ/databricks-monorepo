@@ -27,6 +27,9 @@ VALID_FUNCTIONS = [
     "capture",
 ]
 
+NOTEBOOK_DEFAULT_FUNCTIONS = {"pipeline", "streaming", "capture"}
+SRC_DEFAULT_FUNCTIONS = {"app", "api", "dashboard", "sync"}
+
 
 def _write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -51,15 +54,68 @@ def _common_agents_md(name: str, function: str, domain: str) -> str:
     )
 
 
-def scaffold_pipeline(domain: str, name: str, kind: str) -> None:
+def scaffold_pipeline(domain: str, name: str, kind: str, style: str = "notebook") -> None:
     dir_name = f"pipeline-{name}"
     pkg = dir_name.replace("-", "_")
     root = REPO_ROOT / "projects" / domain / dir_name
-    print(f"Scaffolding pipeline ({kind}): {root.relative_to(REPO_ROOT)}")
+    print(f"Scaffolding pipeline ({kind}, {style}): {root.relative_to(REPO_ROOT)}")
 
     _write(root / "AGENTS.md", _common_agents_md(dir_name, "pipeline", domain))
 
-    if kind == "python":
+    if kind == "python" and style == "notebook":
+        _write(
+            root / "bundle.yml",
+            dedent(f"""
+            resources:
+              jobs:
+                {pkg}_daily:
+                  name: {dir_name}-${{bundle.target}}
+                  tags: {{ bundle: {dir_name}, domain: {domain} }}
+                  tasks:
+                    - task_key: run
+                      notebook_task:
+                        notebook_path: ./notebooks/main.py
+                        base_parameters:
+                          ENV: ${{bundle.target}}
+                          DOMAIN: {domain}
+        """),
+        )
+        _write(
+            root / "pyproject.toml",
+            dedent(f"""
+            [project]
+            name = "{dir_name}"
+            version = "0.1.0"
+            requires-python = ">=3.11"
+            dependencies = ["de-toolbox"]
+        """),
+        )
+        _write(
+            root / "notebooks/main.py",
+            dedent(f"""
+            # Databricks notebook source
+            # MAGIC %md
+            # MAGIC # {dir_name}
+
+            # COMMAND ----------
+
+            # MAGIC %pip install /Workspace/Repos/shared/mono-dev/libs/de_toolbox -q
+
+            # COMMAND ----------
+
+            try:
+                ENV = dbutils.widgets.get("ENV")
+                DOMAIN = dbutils.widgets.get("DOMAIN")
+            except Exception:
+                ENV = "dev"
+                DOMAIN = "{domain}"
+
+            # COMMAND ----------
+
+            # TODO: implement pipeline logic
+        """),
+        )
+    elif kind == "python" and style == "src":
         _write(
             root / "bundle.yml",
             dedent(f"""
@@ -165,11 +221,11 @@ def scaffold_pipeline(domain: str, name: str, kind: str) -> None:
         )
 
 
-def scaffold_streaming(domain: str, name: str, kind: str) -> None:
+def scaffold_streaming(domain: str, name: str, kind: str, style: str = "notebook") -> None:
     dir_name = f"streaming-{name}"
     pkg = dir_name.replace("-", "_")
     root = REPO_ROOT / "projects" / domain / dir_name
-    print(f"Scaffolding streaming ({kind}): {root.relative_to(REPO_ROOT)}")
+    print(f"Scaffolding streaming ({kind}, {style}): {root.relative_to(REPO_ROOT)}")
 
     _write(root / "AGENTS.md", _common_agents_md(dir_name, "streaming", domain))
     _write(
@@ -186,51 +242,87 @@ def scaffold_streaming(domain: str, name: str, kind: str) -> None:
                 - task_key: stream
                   notebook_task:
                     notebook_path: ./notebooks/stream.py
-                    base_parameters: {{ catalog: ${{var.catalog}} }}
-    """),
-    )
-    _write(
-        root / "pyproject.toml",
-        dedent(f"""
-        [project]
-        name = "{dir_name}"
-        version = "0.1.0"
-        requires-python = ">=3.11"
-        dependencies = ["pyspark>=3.5"]
-
-        [build-system]
-        requires = ["hatchling"]
-        build-backend = "hatchling.build"
-
-        [tool.hatch.build.targets.wheel]
-        packages = ["src/{pkg}"]
-    """),
-    )
-    _write(root / f"src/{pkg}/__init__.py", "")
-    _write(
-        root / f"src/{pkg}/stream.py",
-        dedent('''
-        """Structured Streaming entry point."""
-
-        def run(catalog: str) -> None:
-            """TODO: implement streaming logic."""
-            pass
-    '''),
-    )
-    _write(root / "tests/test_stream.py", "def test_smoke(): pass\n")
-    _write(
-        root / "notebooks/stream.py",
-        dedent(f"""
-        # Databricks notebook source
-        dbutils.widgets.text("catalog", "cdo_dev")
-        catalog = dbutils.widgets.get("catalog")
-        from {pkg}.stream import run
-        run(catalog)
+                    base_parameters:
+                      ENV: ${{bundle.target}}
+                      DOMAIN: {domain}
     """),
     )
 
+    if style == "notebook":
+        _write(
+            root / "pyproject.toml",
+            dedent(f"""
+            [project]
+            name = "{dir_name}"
+            version = "0.1.0"
+            requires-python = ">=3.11"
+            dependencies = ["de-toolbox"]
+        """),
+        )
+        _write(
+            root / "notebooks/stream.py",
+            dedent(f"""
+            # Databricks notebook source
+            # MAGIC %md
+            # MAGIC # {dir_name} — Streaming
 
-def scaffold_app(domain: str, name: str, kind: str) -> None:
+            # COMMAND ----------
+
+            try:
+                ENV = dbutils.widgets.get("ENV")
+                DOMAIN = dbutils.widgets.get("DOMAIN")
+            except Exception:
+                ENV = "dev"
+                DOMAIN = "{domain}"
+
+            # COMMAND ----------
+
+            # TODO: implement streaming logic
+        """),
+        )
+    else:
+        _write(
+            root / "pyproject.toml",
+            dedent(f"""
+            [project]
+            name = "{dir_name}"
+            version = "0.1.0"
+            requires-python = ">=3.11"
+            dependencies = ["pyspark>=3.5"]
+
+            [build-system]
+            requires = ["hatchling"]
+            build-backend = "hatchling.build"
+
+            [tool.hatch.build.targets.wheel]
+            packages = ["src/{pkg}"]
+        """),
+        )
+        _write(root / f"src/{pkg}/__init__.py", "")
+        _write(
+            root / f"src/{pkg}/stream.py",
+            dedent('''
+            """Structured Streaming entry point."""
+
+            def run(catalog: str) -> None:
+                """TODO: implement streaming logic."""
+                pass
+        '''),
+        )
+        _write(root / "tests/test_stream.py", "def test_smoke(): pass\n")
+        _write(
+            root / "notebooks/stream.py",
+            dedent(f"""
+            # Databricks notebook source
+            dbutils.widgets.text("catalog", "cdo_dev")
+            catalog = dbutils.widgets.get("catalog")
+            from {pkg}.stream import run
+            run(catalog)
+        """),
+        )
+
+
+def scaffold_app(domain: str, name: str, kind: str, style: str = "src") -> None:
     dir_name = f"app-{name}"
     pkg = dir_name.replace("-", "_")
     root = REPO_ROOT / "projects" / domain / dir_name
@@ -318,7 +410,7 @@ def scaffold_app(domain: str, name: str, kind: str) -> None:
     )
 
 
-def scaffold_dashboard(domain: str, name: str, kind: str) -> None:
+def scaffold_dashboard(domain: str, name: str, kind: str, style: str = "src") -> None:
     dir_name = f"dashboard-{name}"
     root = REPO_ROOT / "projects" / domain / dir_name
     print(f"Scaffolding dashboard: {root.relative_to(REPO_ROOT)}")
@@ -338,7 +430,7 @@ def scaffold_dashboard(domain: str, name: str, kind: str) -> None:
     _write(root / "dashboard.lvdash.json", '{"pages": []}\n')
 
 
-def scaffold_api(domain: str, name: str, kind: str) -> None:
+def scaffold_api(domain: str, name: str, kind: str, style: str = "src") -> None:
     dir_name = f"api-{name}"
     pkg = dir_name.replace("-", "_")
     root = REPO_ROOT / "projects" / domain / dir_name
@@ -429,7 +521,7 @@ def scaffold_api(domain: str, name: str, kind: str) -> None:
     )
 
 
-def scaffold_sync(domain: str, name: str, kind: str) -> None:
+def scaffold_sync(domain: str, name: str, kind: str, style: str = "src") -> None:
     dir_name = f"sync-{name}"
     root = REPO_ROOT / "projects" / domain / dir_name
     print(f"Scaffolding sync: {root.relative_to(REPO_ROOT)}")
@@ -463,11 +555,11 @@ def scaffold_sync(domain: str, name: str, kind: str) -> None:
     )
 
 
-def scaffold_capture(domain: str, name: str, kind: str) -> None:
+def scaffold_capture(domain: str, name: str, kind: str, style: str = "notebook") -> None:
     dir_name = f"capture-{name}"
     pkg = dir_name.replace("-", "_")
     root = REPO_ROOT / "projects" / domain / dir_name
-    print(f"Scaffolding capture ({kind}): {root.relative_to(REPO_ROOT)}")
+    print(f"Scaffolding capture ({kind}, {style}): {root.relative_to(REPO_ROOT)}")
 
     _write(root / "AGENTS.md", _common_agents_md(dir_name, "capture", domain))
     _write(
@@ -482,48 +574,84 @@ def scaffold_capture(domain: str, name: str, kind: str) -> None:
                 - task_key: capture
                   notebook_task:
                     notebook_path: ./notebooks/capture.py
-                    base_parameters: {{ catalog: ${{var.catalog}} }}
+                    base_parameters:
+                      ENV: ${{bundle.target}}
+                      DOMAIN: {domain}
     """),
     )
-    _write(
-        root / "pyproject.toml",
-        dedent(f"""
-        [project]
-        name = "{dir_name}"
-        version = "0.1.0"
-        requires-python = ">=3.11"
-        dependencies = ["pyspark>=3.5"]
 
-        [build-system]
-        requires = ["hatchling"]
-        build-backend = "hatchling.build"
+    if style == "notebook":
+        _write(
+            root / "pyproject.toml",
+            dedent(f"""
+            [project]
+            name = "{dir_name}"
+            version = "0.1.0"
+            requires-python = ">=3.11"
+            dependencies = ["de-toolbox"]
+        """),
+        )
+        _write(
+            root / "notebooks/capture.py",
+            dedent(f"""
+            # Databricks notebook source
+            # MAGIC %md
+            # MAGIC # {dir_name} — Capture
 
-        [tool.hatch.build.targets.wheel]
-        packages = ["src/{pkg}"]
-    """),
-    )
-    _write(root / f"src/{pkg}/__init__.py", "")
-    _write(
-        root / f"src/{pkg}/capture.py",
-        dedent('''
-        """CDC / operational capture logic."""
+            # COMMAND ----------
 
-        def run(catalog: str) -> None:
-            """TODO: implement capture logic."""
-            pass
-    '''),
-    )
-    _write(root / "tests/test_capture.py", "def test_smoke(): pass\n")
-    _write(
-        root / "notebooks/capture.py",
-        dedent(f"""
-        # Databricks notebook source
-        dbutils.widgets.text("catalog", "cdo_dev")
-        catalog = dbutils.widgets.get("catalog")
-        from {pkg}.capture import run
-        run(catalog)
-    """),
-    )
+            try:
+                ENV = dbutils.widgets.get("ENV")
+                DOMAIN = dbutils.widgets.get("DOMAIN")
+            except Exception:
+                ENV = "dev"
+                DOMAIN = "{domain}"
+
+            # COMMAND ----------
+
+            # TODO: implement capture logic
+        """),
+        )
+    else:
+        _write(
+            root / "pyproject.toml",
+            dedent(f"""
+            [project]
+            name = "{dir_name}"
+            version = "0.1.0"
+            requires-python = ">=3.11"
+            dependencies = ["pyspark>=3.5"]
+
+            [build-system]
+            requires = ["hatchling"]
+            build-backend = "hatchling.build"
+
+            [tool.hatch.build.targets.wheel]
+            packages = ["src/{pkg}"]
+        """),
+        )
+        _write(root / f"src/{pkg}/__init__.py", "")
+        _write(
+            root / f"src/{pkg}/capture.py",
+            dedent('''
+            """CDC / operational capture logic."""
+
+            def run(catalog: str) -> None:
+                """TODO: implement capture logic."""
+                pass
+        '''),
+        )
+        _write(root / "tests/test_capture.py", "def test_smoke(): pass\n")
+        _write(
+            root / "notebooks/capture.py",
+            dedent(f"""
+            # Databricks notebook source
+            dbutils.widgets.text("catalog", "cdo_dev")
+            catalog = dbutils.widgets.get("catalog")
+            from {pkg}.capture import run
+            run(catalog)
+        """),
+        )
 
 
 FUNCTION_SCAFFOLDERS = {
@@ -652,6 +780,13 @@ def main() -> int:
     )
     proj.add_argument("--name", required=True, help="Subdomain name (e.g. accounts-payable)")
     proj.add_argument("--kind", choices=["python", "scala"], default="python", help="Language")
+    proj.add_argument(
+        "--style",
+        choices=["notebook", "src"],
+        default=None,
+        help="Project style: notebook (logic in notebooks) or src (logic in src/ package). "
+        "Default: notebook for pipeline/streaming/capture, src for app/api/dashboard/sync.",
+    )
 
     lib_parser = sub.add_parser("lib", help="Create a new shared library")
     lib_parser.add_argument("--name", required=True)
@@ -660,13 +795,20 @@ def main() -> int:
 
     if args.command == "project":
         domain = args.domain.lower()
+        style = args.style
+        if style is None:
+            style = "notebook" if args.function in NOTEBOOK_DEFAULT_FUNCTIONS else "src"
         scaffolder = FUNCTION_SCAFFOLDERS[args.function]
-        scaffolder(domain, args.name, args.kind)
+        scaffolder(domain, args.name, args.kind, style)
         dir_name = f"{args.function}-{args.name}"
-        print(f"\nDone. Created: projects/{domain}/{dir_name}/")
-        print(
-            f"Remember to add 'projects/{domain}/{dir_name}' to pyproject.toml [tool.uv.workspace] members."
-        )
+        print(f"\nDone. Created: projects/{domain}/{dir_name}/ (style: {style})")
+        if style == "src":
+            print(
+                f"Remember to add 'projects/{domain}/{dir_name}' "
+                "to pyproject.toml [tool.uv.workspace] members."
+            )
+        else:
+            print("Notebook-only project — no uv workspace registration needed.")
     elif args.command == "lib":
         scaffold_lib(args.name)
         pkg = args.name.replace("-", "_")

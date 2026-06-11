@@ -43,7 +43,7 @@ def lint(path: Path) -> list[str]:
                 errs.append(f"{path}:{lines.index(line) + 1}: prefer `make` over raw `{f}`")
 
     # App AGENTS.md must declare Inputs and Outputs for data-map generation.
-    is_app = re.search(r"[/\\]apps[/\\][^/\\]+[/\\]AGENTS\.md$", str(path))
+    is_app = re.search(r"[/\\]projects[/\\][^/\\]+[/\\][^/\\]+[/\\]AGENTS\.md$", str(path))
     if is_app:
         headers = [h.strip().lower() for h in re.findall(r"^## (.+)$", text, re.MULTILINE)]
         if "inputs" not in headers:

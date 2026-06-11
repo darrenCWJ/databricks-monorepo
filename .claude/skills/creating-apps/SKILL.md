@@ -74,10 +74,14 @@ Present **all questions in one message**. User replies with a number or types a 
 > 1. Python _(recommended)_
 > 2. Scala
 
-**9. Business rules** _(optional — press Enter or "none" to skip)_
+**9. Project style***
+> 1. `notebook` — all logic in notebooks, no src/ package _(default for pipeline/streaming/capture)_
+> 2. `src` — notebooks are thin shims calling tested src/ code _(default for app/api/dashboard/sync)_
+
+**10. Business rules** _(optional — press Enter or "none" to skip)_
 > e.g. "Never backfill > 30 days", "99.9% completeness SLA by 06:00 SGT"
 
-**10. Claude context** _(optional)_
+**11. Claude context** _(optional)_
 > 1. Yes — create `CLAUDE.md` _(recommended for complex domain apps)_
 > 2. No
 
@@ -183,7 +187,13 @@ Owner        : @cdo/<team>
 Language     : Python | Scala
 Goal         : <1-2 sentence description>
 
-Files to create:
+**If style = notebook (pipeline/streaming/capture):**
+  projects/<domain>/<name>/AGENTS.md
+  projects/<domain>/<name>/bundle.yml
+  projects/<domain>/<name>/pyproject.toml    (minimal — lib deps only, NOT a uv workspace member)
+  projects/<domain>/<name>/notebooks/main.py
+
+**If style = src (app/api/dashboard/sync):**
   projects/<domain>/<name>/AGENTS.md
   projects/<domain>/<name>/bundle.yml
   projects/<domain>/<name>/pyproject.toml
@@ -238,6 +248,8 @@ def run(catalog: str) -> None:
     """
 ```
 
+**For notebook-only projects:** Fill `notebooks/main.py` with the pipeline logic directly. No src/ package needed.
+
 **`tests/test_job.py`** — replace smoke test with one meaningful unit test
 that asserts real behaviour (not just "it ran").
 
@@ -257,6 +269,8 @@ models:
 
 This is required for all projects that write output tables. Breaking changes
 (drop/rename/type-change) are blocked by pre-commit if downstream consumers exist.
+
+**Code location principle:** For src-wrapped projects, all business logic goes in `src/<package>/`. For notebook-only projects, logic lives directly in `notebooks/`.
 
 ---
 
@@ -308,6 +322,9 @@ bundle.yml depends_on:
 
 Files per task:
   <task_name>  →  notebooks/<nn>_<task_name>.py  →  src/<pkg>/<task_name>.py
+
+Notebook-only:
+  <task_name>  →  notebooks/<task_name>.py  (no src/ layer)
 ─────────────────────────────────────────────────────────────────
 Confirm the job topology, or specify changes.
 ```
@@ -325,6 +342,8 @@ All three must land in the same MR as the app code.
 
 ### `pyproject.toml`
 > [Phase 6] About to add workspace member to root pyproject.toml.
+
+**Skip this step for notebook-only projects** — they are not uv workspace members.
 
 ```diff
  [tool.uv.workspace]

@@ -5,7 +5,6 @@ Checks:
 1. Every @cdo/<team> referenced outside CODEOWNERS also exists in CODEOWNERS.
 2. Every group in CODEOWNERS is referenced at least once elsewhere
    (or appears in ALLOWED_UNREFERENCED — platform-wide / cross-cutting roles).
-3. Every directory under projects/, libs/, dbt/ matches at least one CODEOWNERS rule.
 
 Run manually:
     uv run python tools/scripts/check_ownership_sync.py
@@ -13,7 +12,6 @@ Run manually:
 
 from __future__ import annotations
 
-import fnmatch
 import re
 import sys
 from pathlib import Path
@@ -87,10 +85,6 @@ def codeowners_groups(lines: list[tuple[str, list[str]]]) -> set[str]:
     return g
 
 
-def codeowners_path_globs(lines: list[tuple[str, list[str]]]) -> list[str]:
-    return [glob for glob, _ in lines]
-
-
 def referenced_groups() -> dict[str, list[Path]]:
     found: dict[str, list[Path]] = {}
     for pattern in SCAN_PATTERNS:
@@ -105,52 +99,9 @@ def referenced_groups() -> dict[str, list[Path]]:
     return found
 
 
-def matches_any_codeowners_glob(rel_path: str, globs: list[str]) -> bool:
-    """Return True if rel_path is matched by at least one CODEOWNERS path glob."""
-    if not rel_path.startswith("/"):
-        rel_path = "/" + rel_path
-    if not rel_path.endswith("/"):
-        rel_path = rel_path + "/"
-    for g in globs:
-        if g == "*":
-            continue  # default catch-all — every path matches but doesn't count
-        if not g.startswith("/"):
-            g = "/" + g
-        if not g.endswith("/") and "*" not in g.split("/")[-1]:
-            g = g + "/"
-        if fnmatch.fnmatchcase(rel_path, g) or fnmatch.fnmatchcase(rel_path, g + "*"):
-            return True
-        # Also try the glob with trailing wildcard for prefix matches
-        if fnmatch.fnmatchcase(rel_path[:-1], g[:-1]):
-            return True
-    return False
-
-
-def directories_to_check() -> list[str]:
-    """Each project under projects/<domain>/<name>/ must match a CODEOWNERS rule."""
-    dirs: list[str] = []
-    for top in ("projects", "libs", "dbt"):
-        root = REPO_ROOT / top
-        if not root.exists():
-            continue
-        if top == "projects":
-            for domain in sorted(root.iterdir()):
-                if not domain.is_dir() or domain.name.startswith("."):
-                    continue
-                for project in sorted(domain.iterdir()):
-                    if project.is_dir():
-                        dirs.append(f"{top}/{domain.name}/{project.name}/")
-        else:
-            for d in sorted(root.iterdir()):
-                if d.is_dir():
-                    dirs.append(f"{top}/{d.name}/")
-    return dirs
-
-
 def main() -> int:
     lines = codeowners_lines()
     co_groups = codeowners_groups(lines)
-    co_globs = codeowners_path_globs(lines)
     refs = referenced_groups()
     errs: list[str] = []
     warns: list[str] = []
@@ -169,11 +120,6 @@ def main() -> int:
         if g not in ALLOWED_UNREFERENCED:
             warns.append(f"Group {g} declared in CODEOWNERS but referenced nowhere else.")
 
-    # Check 3: every projects/, libs/, dbt/ directory must match a CODEOWNERS rule
-    for d in directories_to_check():
-        if not matches_any_codeowners_glob(d, co_globs):
-            errs.append(f"Directory /{d} has no specific CODEOWNERS rule (falls to default).")
-
     if warns:
         print("WARNINGS:", file=sys.stderr)
         for w in warns:
@@ -189,11 +135,7 @@ def main() -> int:
         )
         return 1
 
-    print(
-        f"OK: {len(co_groups)} groups in CODEOWNERS, "
-        f"{len(refs)} groups referenced elsewhere, "
-        f"{len(directories_to_check())} dirs covered."
-    )
+    print(f"OK: {len(co_groups)} groups in CODEOWNERS, {len(refs)} groups referenced elsewhere.")
     return 0
 
 

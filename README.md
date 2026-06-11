@@ -81,6 +81,7 @@ You build and maintain batch/streaming pipelines that run on Databricks.
    ```
 
 2. **Write your logic** in `projects/<name>/src/<package>/` (not in notebooks).
+   For notebook-only projects (pipelines, streaming, capture), logic lives directly in `notebooks/`. See `docs/adr/0004-notebook-project-support.md`.
 
 3. **Write tests first:**
    ```bash
@@ -101,8 +102,7 @@ You build and maintain batch/streaming pipelines that run on Databricks.
 
 ### Key conventions
 
-- Business logic lives in `src/`, not notebooks. Notebooks are thin shims
-  that call functions from `src/`.
+- For src-wrapped projects, business logic lives in `src/`. Notebook-only projects (pipelines) keep logic in `notebooks/`.
 - Each app is a Databricks Asset Bundle (DAB) with its own `bundle.yml`.
 - Use `${var.catalog}` for environment-specific catalogs — never hardcode.
 - Reference secrets via `${secrets.scope.key}` in `bundle.yml`.
