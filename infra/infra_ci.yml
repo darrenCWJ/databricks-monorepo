@@ -16,6 +16,7 @@
 #   TF_VAR_gitlab_url            GitLab hostname without scheme (e.g. sgts.gitlab-dedicated.com)
 #   TF_VAR_gitlab_project_path   Full GitLab project path (e.g. wog/gvt/dart/gvt-dsaid-dart/mono-dev)
 #   TF_VAR_trusted_databricks_account_ids Optional list literal for extra Databricks account IDs
+#   TF_PLAN_REFRESH              Optional: true to refresh during plan after CI role bootstrap. Defaults to false.
 
 variables:
   TF_ROOT: ${CI_PROJECT_DIR}/infra
@@ -63,11 +64,15 @@ tf-plan:
     - linux-small-amd64
   script:
     - |
+      REFRESH_FLAG="-refresh=false"
+      if [ "${TF_PLAN_REFRESH:-false}" = "true" ]; then
+        REFRESH_FLAG="-refresh=true"
+      fi
       PLAN_ARGS="-var-file=terraform.tfvars -var=gitlab_url=${CI_SERVER_HOST} -var=gitlab_project_path=${CI_PROJECT_PATH}"
       if [ -n "${TF_VAR_trusted_databricks_account_ids:-}" ]; then
         PLAN_ARGS="$PLAN_ARGS -var=trusted_databricks_account_ids=${TF_VAR_trusted_databricks_account_ids}"
       fi
-      terraform plan $PLAN_ARGS -out=${CI_PROJECT_DIR}/tfplan
+      terraform plan $REFRESH_FLAG $PLAN_ARGS -out=${CI_PROJECT_DIR}/tfplan
   artifacts:
     paths:
       - tfplan
