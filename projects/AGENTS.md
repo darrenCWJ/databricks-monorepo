@@ -80,7 +80,7 @@ These are parsed by `build_dep_graph.py` and included in `make affected` output.
 
 ## Rules
 1. One project = one team's concern. Never edit across project boundaries in one PR.
-2. Business logic goes in `src/`, not notebooks. Notebooks are thin shims.
+2. For src-wrapped projects (apps, APIs), business logic goes in `src/`. For notebook-only projects (pipelines, streaming, capture), logic lives directly in notebooks. See ADR-0004.
 3. Every project must have `AGENTS.md` (≤80 lines) describing purpose, I/O, SLA.
 4. Every project with output tables must have `contracts/schema.yml`.
 5. Tests must pass locally before opening an MR (`make test P=projects/<domain>/<name>`).
