@@ -1,0 +1,140 @@
+[project]
+name = "cdo-platform"
+version = "0.0.0"
+description = "CDO data platform monorepo (workspace root)"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pre-commit>=3.8",
+    "databricks-cli>=0.18",
+    "nbstripout>=0.7",
+    "pip-audit>=2.7",
+]
+
+[tool.uv.workspace]
+members = [
+    "tools/scripts",
+    "libs/de_toolbox",
+    "libs/de_databricks",
+]
+
+[tool.uv.sources]
+
+# IM8 Tier 1: internal package index is the default source.
+# Public PyPI access is denied at the network layer for Restricted workloads.
+[[tool.uv.index]]
+name = "cdo-internal"
+url = "https://artifactory.cdo.gov.sg/api/pypi/pypi-prod/simple"
+default = true
+
+[tool.uv]
+index-strategy = "first-index"
+prerelease = "disallow"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.format]
+exclude = ["projects/**/notebooks/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "S", "B", "UP"]
+ignore = ["S101", "S603", "S607", "S112", "E501", "F403", "F405"]
+
+[tool.ruff.lint.per-file-ignores]
+"libs/de_toolbox/**" = [
+    "S608",   # hardcoded SQL — standard Spark SQL pattern
+    "S307",   # eval — used for dynamic Spark expressions
+    "S113",   # request-without-timeout — legacy connector code
+    "S314",   # xml parsing — SharePoint connector
+    "S105",   # hardcoded password — false positive on variable names
+    "S108",   # hardcoded temp file
+    "S110",   # try-except-pass
+    "S310",   # suspicious URL open
+    "B006",   # mutable default argument — legacy Spark pattern
+    "B007",   # unused loop variable — Spark iteration patterns
+    "B005",   # strip with multi-chars
+    "B018",   # useless expression
+    "B905",   # zip-without-strict
+    "E402",   # imports after sys.path manipulation
+    "E712",   # true-false comparison — Spark filter pattern
+    "E722",   # bare except — legacy error handling
+    "F841",   # unused variable — Spark side-effect assignments
+    "F402",   # import shadowed by loop var
+]
+"libs/de_toolbox/_legacy/**" = ["ALL"]
+"projects/**/notebooks/*.py" = [
+    "F821",   # undefined names — dbutils/spark injected by Databricks runtime
+    "E402",   # imports not at top — notebook cells reorder imports
+    "I001",   # import sorting — cell boundaries break isort
+]
+"libs/de_databricks/**" = [
+    "S105",   # hardcoded password — false positive on variable names
+    "S106",   # hardcoded password in test fixtures
+    "S107",   # hardcoded password in function defaults
+    "S108",   # hardcoded temp file
+    "S110",   # try-except-pass
+    "S113",   # request-without-timeout
+    "S608",   # hardcoded SQL
+    "S307",   # eval — used for dynamic config
+    "B006",   # mutable default argument
+    "B007",   # unused loop variable
+    "B018",   # useless expression — notebook marker cells
+    "B904",   # raise-without-from — legacy error handling
+    "E402",   # imports after sys.path
+    "E701",   # multiple statements on one line
+    "E731",   # lambda assignment — legacy notebook patterns
+    "E712",   # true-false comparison
+    "E721",   # type comparison with ==
+    "E722",   # bare except
+    "F401",   # unused import (wildcard re-exports)
+    "F403",   # wildcard imports
+    "F405",   # undefined from wildcard
+    "F541",   # f-string without placeholders — legacy print statements
+    "F811",   # redefinition — notebook cell pattern
+    "F821",   # undefined name — spark/dbutils injected by Databricks runtime
+    "F841",   # unused variable
+    "UP006",  # deprecated typing — legacy code
+    "UP007",  # X | Y annotations — legacy code
+    "UP008",  # super() style — legacy code
+    "UP035",  # deprecated typing imports — legacy code
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+explicit_package_bases = true
+[[tool.mypy.overrides]]
+module = ["pyspark.*", "databricks.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["de_toolbox.*"]
+strict = false
+disable_error_code = ["name-defined", "no-untyped-def", "no-untyped-call"]
+
+[[tool.mypy.overrides]]
+module = ["de_databricks.*"]
+strict = false
+disable_error_code = ["name-defined", "no-untyped-def", "no-untyped-call"]
+
+[[tool.mypy.overrides]]
+module = ["projects.*"]
+strict = false
+disable_error_code = ["name-defined", "no-untyped-def", "type-arg"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["projects", "libs"]
+markers = [
+    "unit: fast, no external deps",
+    "integration: requires a live Spark or Databricks connection",
+    "compliance: validates a compliance control",
+]

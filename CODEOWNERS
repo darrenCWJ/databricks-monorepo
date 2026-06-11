@@ -1,0 +1,8 @@
+# cdo-platform CODEOWNERS — GitLab syntax
+# All files require approval from the following users.
+
+*                                       @wei_hao_tan @jeffrey_siew
+
+# Shared libraries
+/libs/de_toolbox/                       @wei_hao_tan @jeffrey_siew
+/libs/de_databricks/                    @wei_hao_tan @jeffrey_siew
