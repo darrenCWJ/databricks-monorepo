@@ -257,7 +257,7 @@ resource "aws_s3_bucket_policy" "workspace" {
       ]
       Condition = {
         StringEquals = {
-          "aws:PrincipalTag/DatabricksAccountId" = var.databricks_account_id
+          "aws:PrincipalTag/DatabricksAccountId" = concat([var.databricks_account_id], var.trusted_databricks_account_ids)
         }
       }
     }]
@@ -381,6 +381,17 @@ resource "null_resource" "update_workspace_trust_policy" {
             Condition = {
               StringEquals = { "sts:ExternalId" = id }
             }
+          }],
+          # NEW: UCMasterRole + self-assume for Unity Catalog access
+          [{
+            Effect = "Allow"
+            Principal = {
+              AWS = [
+                "arn:aws:iam::414351767826:role/unity-catalog-prod-UCMasterRole-14S5ZJVKOTYTL",
+                "arn:aws:iam::${var.aws_account_id}:role/${var.iam_role_name}"
+              ]
+            }
+            Action = "sts:AssumeRole"
           }]
         )
       })

@@ -12,6 +12,7 @@ variable "service_principal_id" {
     Set via TF_VAR_service_principal_id in GitLab CI/CD variables.
   EOT
   type        = string
+  default     = ""
 }
 
 variable "aws_role_arn" {
