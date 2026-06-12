@@ -16,6 +16,9 @@ Deploy unit: Databricks Asset Bundle (DAB), one per directory under `projects/`.
 - `make check-deps` — check for breaking schema changes and report downstream impact
 - `make new-project DOMAIN=<domain> FUNCTION=<type> NAME=<name> KIND=python|scala` — scaffold a new project
 - `make import-job JOB_ID=<id> T=<path>` — import an existing Databricks Job (see docs/runbooks/import-existing-job.md)
+- `make graph` — regenerate full knowledge graph (graphify)
+- `make graph-update` — incremental graph rebuild (code changes only, no LLM cost)
+- `make graph-check` — validate AGENTS.md claims against knowledge graph
 
 ## Folder map
 - `projects/`    deploy units (DABs), organized by domain. Edit here to ship behaviour.

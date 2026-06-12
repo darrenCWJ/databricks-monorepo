@@ -1,0 +1,8 @@
+.venv/
+.ruff_cache/
+.terraform/
+graphify-out/
+*.lock
+node_modules/
+__pycache__/
+.pytest_cache/

@@ -39,7 +39,7 @@ Before asking the agent to do anything substantive, give it the rules:
 > rules you'll follow before suggesting any changes. Then summarize the
 > command surface I should use."*
 
-Expected response: a paraphrase of the AGENTS.md rules + a list of `just`
+Expected response: a paraphrase of the AGENTS.md rules + a list of `make`
 commands. If the agent skips this and just suggests code, the AGENTS.md
 context wasn't loaded — paste the relevant sections into the chat before
 proceeding.
@@ -68,23 +68,38 @@ Git-Folder push lifecycle.
 
 ## What Genie Code does well in this repo
 
-- **Generating new dbt models** — it reads the existing models in
-  `dbt/<team>/`, mimics the column-tag pattern, includes `meta.pii`,
-  `meta.classification`, etc.
 - **Authoring transforms from data shape** — given a UC table, it
   produces idiomatic PySpark or SQL that respects classification.
 - **Extending an existing app** — multi-cell edits within one notebook,
   with cluster-aware suggestions (knows what's already installed).
+- **Generating schema contracts** — given output tables, produces
+  `contracts/schema.yml` with correct `meta.pii`, `meta.classification` fields.
 
 ## What it does less well
 
 - **Reasoning across the whole repo.** Cross-team contracts, CODEOWNERS
   routing, the cross-project ref pattern — Genie Code may need to be
   prompted explicitly to consider these.
-- **Knowing about `just` and `affected.py`.** It can call them via
+- **Knowing about `make` and `affected.py`.** It can call them via
   `%sh make affected`, but won't volunteer that. Prompt for it.
 - **Notebook hygiene.** Tends to put business logic in the notebook
   rather than wrapping it in `src/`. CODEOWNER review catches this.
+
+## Using the knowledge graph from Genie Code
+
+The repo includes a committed `graphify-out/GRAPH_REPORT.md` that shows:
+- **God nodes** — most-connected concepts (central modules, shared tables)
+- **Communities** — clusters of related code (matches folder structure)
+- **Surprising connections** — cross-boundary dependencies worth knowing about
+
+To orient yourself in a new area:
+
+> *"Read `graphify-out/GRAPH_REPORT.md` and tell me which community
+> the file I'm editing belongs to. What are its upstream and downstream
+> dependencies?"*
+
+This gives Genie Code the same architectural awareness that CLI agents get
+from running `graphify query` — without needing terminal access.
 
 ## Validation test prompts
 
@@ -94,10 +109,9 @@ the right context.
 > **Prompt 1.** "Read AGENTS.md and tell me three rules. Then run
 > `make affected` via `%sh` and tell me what would deploy."
 
-> **Prompt 2.** "Open the schema.yml in `dbt/platform-core/models/marts/`.
-> Propose adding a column `vat_amount` (DECIMAL(18,2), Restricted PII)
-> with full `meta.*` fields. Run `check_pii_contract.py` against your
-> proposed change."
+> **Prompt 2.** "Read `graphify-out/GRAPH_REPORT.md`. What community does
+> `libs/de_toolbox` belong to? Name its upstream and downstream
+> dependencies."
 
 > **Prompt 3.** "Without leaving this notebook, scaffold a new Python
 > DAB called `fraud-alert-daily`. Open the generated bundle.yml
@@ -136,3 +150,4 @@ review path as a human-authored MR.
 - `docs/runbooks/bootstrap-ci-and-audit.md` Part 2 — Databricks ↔ GitLab linkage
 - `AGENTS.md` — the rules every agent reads
 - `docs/runbooks/access-control.md` — what the agent's generated SQL can and can't see
+- `graphify-out/GRAPH_REPORT.md` — architecture map (queryable from notebook)
