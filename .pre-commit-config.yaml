@@ -58,3 +58,11 @@ repos:
         language: system
         files: "contracts/schema\\.yml$"
         pass_filenames: false
+
+      - id: graphify-update
+        name: Update knowledge graph (AST-only, no API key needed)
+        entry: bash -c 'graphify . --update --no-viz && git add graphify-out/graph.json graphify-out/GRAPH_REPORT.md 2>/dev/null || true'
+        language: system
+        files: "\\.(py|tf|scala|java|ts|js|go|rs)$"
+        pass_filenames: false
+        stages: [pre-commit]
