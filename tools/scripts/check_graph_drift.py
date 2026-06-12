@@ -93,9 +93,7 @@ def check_runtime_deps(agents_files: list[Path]) -> list[str]:
                 full_path = REPO_ROOT / target_path
                 if not full_path.exists():
                     rel = path.relative_to(REPO_ROOT)
-                    errors.append(
-                        f"{rel}: runtime dependency '{target_path}' not found on disk"
-                    )
+                    errors.append(f"{rel}: runtime dependency '{target_path}' not found on disk")
     return errors
 
 
@@ -117,9 +115,7 @@ def check_graph_nodes(graph: dict, agents_files: list[Path]) -> list[str]:
                 table_name = table_match.group(1).strip()
                 if not any(table_name in src for src in node_sources):
                     rel = path.relative_to(REPO_ROOT)
-                    errors.append(
-                        f"{rel}: declared table '{table_name}' not found in graph"
-                    )
+                    errors.append(f"{rel}: declared table '{table_name}' not found in graph")
 
     return errors
 
