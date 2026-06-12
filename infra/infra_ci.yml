@@ -1,0 +1,97 @@
+# infra/infra_ci.yml
+#
+# Terraform pipeline for the infra/ directory (Databricks + AWS, S3 backend).
+# Included by the root .gitlab-ci.yml — do NOT use as a standalone .gitlab-ci.yml.
+#
+# ── Required GitLab CI/CD variables (Settings > CI/CD > Variables) ────────────
+#   DATABRICKS_HOST              e.g. https://dbc-xxxxxxxx.cloud.databricks.com
+#   DATABRICKS_TOKEN             personal access token or service principal OAuth token
+#   TF_VAR_service_principal_id  application_id of the service principal (UUID)
+#   TF_VAR_databricks_account_id Databricks account UUID
+#   TF_VAR_mws_client_id         account-admin SP application ID (for MWS provider)
+#   TF_VAR_mws_client_secret     account-admin SP OAuth secret (for MWS provider)
+#   GITLAB_CI_AWS_ROLE_ARN       ARN of the IAM role to assume via OIDC (output of iam_ci.tf)
+#   TF_VAR_aws_region            AWS region (e.g. ap-southeast-1)
+#   TF_VAR_aws_account_id        AWS account ID
+#   TF_VAR_gitlab_url            GitLab hostname without scheme (e.g. sgts.gitlab-dedicated.com)
+#   TF_VAR_gitlab_project_path   Full GitLab project path (e.g. wog/gvt/dart/gvt-dsaid-dart/mono-dev)
+#   TF_VAR_trusted_databricks_account_ids Optional list literal for extra Databricks account IDs
+#   TF_PLAN_REFRESH              Optional: true to refresh during plan after CI role bootstrap. Defaults to false.
+
+variables:
+  TF_ROOT: ${CI_PROJECT_DIR}/infra
+  AWS_ROLE_ARN: "${GITLAB_CI_AWS_ROLE_ARN}"
+  AWS_WEB_IDENTITY_TOKEN_FILE: "/tmp/web_identity_token"
+  AWS_DEFAULT_REGION: "ap-southeast-1"
+
+# Base template: injects the OIDC token and runs Terraform init.
+# id_tokens must be declared per-job — using extends avoids repetition.
+.terraform_base:
+  image:
+    name: registry.sgts.gitlab-dedicated.com/innersource/projects/sgts-pipelinecoe/containers/aws-cli-and-terraform-container:latest
+    pull_policy: always
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: $CI_SERVER_URL
+  before_script:
+    - echo $GITLAB_OIDC_TOKEN > $AWS_WEB_IDENTITY_TOKEN_FILE
+    - TF_VERSION="1.10.5"
+    - curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" -o /tmp/terraform.zip
+    - unzip -o /tmp/terraform.zip -d /tmp terraform
+    - export PATH="/tmp:$PATH"
+    - terraform -version
+    - cd ${TF_ROOT}
+    - aws s3 cp s3://sst-s3-gvt-sdp-databricks-internet-workspace/terraform/vars/terraform.tfvars ./terraform.tfvars
+    - terraform init -input=false
+    
+
+tf-validate:
+  extends: .terraform_base
+  stage: tf-validate
+  tags:
+    - linux-small-amd64
+  script:
+    - terraform validate
+    - terraform fmt -check -recursive
+  rules:
+    - changes:
+        - infra/**/*
+
+tf-plan:
+  extends: .terraform_base
+  stage: tf-plan
+  tags:
+    - linux-small-amd64
+  script:
+    - |
+      REFRESH_FLAG="-refresh=false"
+      if [ "${TF_PLAN_REFRESH:-false}" = "true" ]; then
+        REFRESH_FLAG="-refresh=true"
+      fi
+      PLAN_ARGS="-var-file=terraform.tfvars -var=gitlab_url=${CI_SERVER_HOST} -var=gitlab_project_path=${CI_PROJECT_PATH}"
+      if [ -n "${TF_VAR_trusted_databricks_account_ids:-}" ]; then
+        PLAN_ARGS="$PLAN_ARGS -var=trusted_databricks_account_ids=${TF_VAR_trusted_databricks_account_ids}"
+      fi
+      terraform plan $REFRESH_FLAG $PLAN_ARGS -out=${CI_PROJECT_DIR}/tfplan
+  artifacts:
+    paths:
+      - tfplan
+    expire_in: 1 week
+  rules:
+    - changes:
+        - infra/**/*
+
+tf-apply:
+  extends: .terraform_base
+  stage: tf-apply
+  tags:
+    - linux-small-amd64
+  script:
+    - terraform apply -auto-approve ${CI_PROJECT_DIR}/tfplan
+  dependencies:
+    - tf-plan
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - infra/**/*
+      when: manual
