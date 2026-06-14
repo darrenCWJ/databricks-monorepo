@@ -1,0 +1,23 @@
+build-ci-base:
+  stage: .pre
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
+  rules:
+    - changes:
+        - .gitlab/ci/Dockerfile.ci-base
+      when: always
+    - when: manual
+      allow_failure: true
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}"
+      > /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --context "$CI_PROJECT_DIR"
+      --dockerfile "$CI_PROJECT_DIR/.gitlab/ci/Dockerfile.ci-base"
+      --destination "$CI_REGISTRY_IMAGE/ci-base:latest"
+      --destination "$CI_REGISTRY_IMAGE/ci-base:$CI_COMMIT_SHORT_SHA"
+      --cache=true

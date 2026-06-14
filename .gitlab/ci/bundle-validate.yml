@@ -1,0 +1,5 @@
+bundle-validate:
+  stage: bundle-validate
+  image: $CI_BASE_IMAGE
+  script:
+    - databricks bundle validate

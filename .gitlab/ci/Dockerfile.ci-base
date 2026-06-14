@@ -1,0 +1,16 @@
+FROM ghcr.io/astral-sh/uv:python3.11-bookworm
+
+ARG DATABRICKS_CLI_VERSION=0.299.2
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends unzip \
+    && curl -fsSL "https://github.com/databricks/cli/releases/download/v${DATABRICKS_CLI_VERSION}/databricks_cli_${DATABRICKS_CLI_VERSION}_linux_amd64.zip" -o /tmp/databricks-cli.zip \
+    && curl -fsSL "https://github.com/databricks/cli/releases/download/v${DATABRICKS_CLI_VERSION}/databricks_cli_${DATABRICKS_CLI_VERSION}_SHA256SUMS" -o /tmp/checksums.txt \
+    && cd /tmp && grep "linux_amd64.zip" checksums.txt | sha256sum -c - \
+    && unzip /tmp/databricks-cli.zip -d /usr/local/bin/ \
+    && chmod +x /usr/local/bin/databricks \
+    && rm /tmp/databricks-cli.zip /tmp/checksums.txt \
+    && apt-get purge -y unzip && apt-get autoremove -y \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN databricks --version

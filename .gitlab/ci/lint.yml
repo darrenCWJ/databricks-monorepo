@@ -1,0 +1,7 @@
+lint:
+  stage: lint
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
+  script:
+    - uv sync
+    - uv run ruff check
+    - uv run ruff format --check
