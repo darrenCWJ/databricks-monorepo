@@ -73,7 +73,7 @@ tasks:
 
 ### Schema setup
 
-Put schema definitions in `apps/{name}/lakebase/`:
+Put schema definitions in `projects/{name}/lakebase/`:
 
 ```
 lakebase/

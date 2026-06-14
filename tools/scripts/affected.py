@@ -50,7 +50,7 @@ GLOBAL_FILES = {
     "pyproject.toml",
     "uv.lock",
     "databricks.yml",
-    "justfile",
+    "Makefile",
     ".pre-commit-config.yaml",
 }
 

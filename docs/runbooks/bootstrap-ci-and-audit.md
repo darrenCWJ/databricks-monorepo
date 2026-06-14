@@ -89,7 +89,7 @@ prefix per env).
 
 ### Step 3.1 — Create the bucket via Terraform
 
-Add to `infra/terraform-databricks/main.tf` (or a new `infra/audit/main.tf`):
+Add to `infra/main.tf` (or a new `infra/audit/main.tf`):
 
 ```hcl
 resource "aws_s3_bucket" "audit" {

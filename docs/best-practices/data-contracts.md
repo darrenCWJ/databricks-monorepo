@@ -65,7 +65,7 @@ resources:
 
 ## Tooling
 
-- `just where-is <table>` — which app produces this table?
+- `make where-is MODEL=<table>` — which app produces this table?
 - `tools/scripts/contract_check.py` — pre-commit gate that verifies
   every Delta write matches its declared contract.
 - `tools/scripts/contract_diff.py` — show schema changes in a producer's

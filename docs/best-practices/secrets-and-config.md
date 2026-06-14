@@ -15,7 +15,7 @@ vars set in CI.
 
 - **One scope per project.** Name: `cdo-<env>-<team>-<app>`.
   e.g. `cdo-prod-finance-payment-recon`.
-- **Created by Terraform in `infra/terraform-databricks/`.**
+- **Created by Terraform in `infra/`.**
   Never created by hand.
 - **Access granted to one service principal only** — the one in
   `bundle.yml#targets#prod#run_as`. Engineers don't read prod secrets.

@@ -11,7 +11,7 @@ Databricks, with the same DAB + AGENTS.md discipline as a data engineer.
 - `libs/ml_features/` (if it exists yet) — shared feature engineering
 
 ## Day 1 — tools + Databricks Git integration
-- Install `uv`, `just`, `databricks` CLI
+- Install `uv`, `make`, `databricks` CLI
 - In Databricks UI: User Settings → Linked accounts → register your GitLab PAT
   (see `docs/runbooks/bootstrap-ci-and-audit.md` Part 2)
 - Clone the repo into a Databricks Git Folder for in-browser notebook editing

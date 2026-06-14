@@ -1,11 +1,11 @@
 # Code style
 
 > Conventions that apply across every project. Project-specific overrides
-> live in `apps/<name>/AGENTS.md`.
+> live in `projects/<name>/AGENTS.md`.
 
 ## Python
 
-- **PEP 8 via ruff.** Run `just lint` before every commit. Pre-commit
+- **PEP 8 via ruff.** Run `make lint` before every commit. Pre-commit
   runs it on push, too.
 - **Type annotations on every public function.** Internal helpers can
   infer, but anything that crosses a module boundary is typed.
@@ -22,7 +22,7 @@
 ### File layout
 
 ```
-apps/<name>/
+projects/<name>/
 ├── src/<package>/
 │   ├── __init__.py          # exports public API
 │   ├── transforms.py        # pure transforms — unit-testable

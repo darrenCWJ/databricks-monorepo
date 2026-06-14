@@ -8,7 +8,7 @@
 | Immutable audit log | `tools/scripts/audit_log.py` writes every deploy to S3 bucket with Object Lock (WORM) |
 | Access reviews (quarterly) | `tools/scripts/dump_access.py` exports CODEOWNERS + Databricks ACLs + UC grants for governance review |
 | No prod creds on developer machines | Prod deploys via service principal only; devs read prod via UC grants, cannot write |
-| Source-controlled infra | `infra/terraform-databricks/`, `infra/unity-catalog/` |
+| Source-controlled infra | `infra/`, `infra/modules/unity_catalog/` |
 | Build reproducibility | uv lockfile + pinned pre-commit revs + pinned CI image SHAs |
 
 ## Branch model maps to SOC2 evidence

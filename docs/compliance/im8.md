@@ -110,7 +110,7 @@ agency decision). Implications captured here:
 | IM8 area | File(s) |
 |---|---|
 | Classification contract | `dbt/*/schema.yml`, `tools/scripts/check_pii_contract.py` |
-| GCC hosting | `databricks.yml`, `infra/terraform-databricks/main.tf` |
+| GCC hosting | `databricks.yml`, `infra/main.tf` |
 | Internal index | `pyproject.toml` `[[tool.uv.index]]` |
 | SGNet/PrivateLink | infra-side (out of repo); documented here |
 | Audit logging | `tools/scripts/audit_log.py` |

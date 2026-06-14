@@ -21,7 +21,7 @@ which uses it to govern catalog access via column masks and row filters.
    (employment status, NDA, IM8 awareness training complete).
 
 4. **Platform team creates the group** — `@cdo/platform-team` opens
-   an MR to `infra/terraform-databricks/groups.tf`:
+   an MR to `infra/modules/iam/`:
 
    ```hcl
    resource "databricks_group" "team_x_cleared" {
@@ -32,8 +32,8 @@ which uses it to govern catalog access via column masks and row filters.
    Plus a CODEOWNERS section in `CODEOWNERS`:
 
    ```
-   /apps/team-x-*/   @cdo/team-x-team
-   /libs/team-x-*/   @cdo/team-x-team
+   /projects/team-x-*/   @cdo/team-x-team
+   /libs/team-x-*/       @cdo/team-x-team
    ```
 
 5. **Group memberships** — managed in GitLab UI by the platform team.
@@ -48,7 +48,7 @@ which uses it to govern catalog access via column masks and row filters.
 7. **Member onboarding** — each member completes:
    - IM8 Tier 1 awareness training (annual).
    - PDPA handling training (one-time).
-   - This monorepo's `AGENTS.md` + the team's `apps/AGENTS.md`.
+   - This monorepo's `AGENTS.md` + the team's `projects/AGENTS.md`.
 
 8. **Quarterly review** — the team's lead re-certifies the membership
    list every quarter. Members who haven't logged in for 90 days are

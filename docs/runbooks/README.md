@@ -10,7 +10,6 @@ Step-by-step how-tos. Each runbook answers one question.
 | `access-control.md` | Granting access to a catalog / schema / column. |
 | `codeowners-maintenance.md` | Adding a team or changing approvers. |
 | `cleared-group-intake.md` | Onboarding a new cleared-data team. |
-| `migrate-a-repo.md` | Pulling a legacy repo into `apps/`. |
 
 ## House style
 

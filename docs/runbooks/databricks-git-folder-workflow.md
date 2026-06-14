@@ -8,7 +8,7 @@ slower. Three patterns to bridge the gap.
 ## When to use this
 
 - You're on a locked-down government machine where you can't install
-  `uv`, `just`, or the Databricks CLI locally.
+  `uv`, `make`, or the Databricks CLI locally.
 - You're prototyping a notebook and want immediate execution in
   Databricks.
 - You're using **Genie Code** or **Databricks Code Assistant** as your
@@ -98,7 +98,7 @@ the practical workflow:
 6. Review failures in the GitLab UI. Fix in the same notebook. Push again.
 7. CODEOWNER approves. Merge.
 
-You never need a laptop with `uv` / `just` / `databricks` installed. The
+You never need a laptop with `uv` / `make` / `databricks` installed. The
 platform supports this path natively.
 
 ## What about agents that author from inside Databricks?

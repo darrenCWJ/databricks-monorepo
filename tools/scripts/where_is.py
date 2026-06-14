@@ -7,7 +7,7 @@ Reads two signals:
 
 Usage:
     uv run python tools/scripts/where_is.py <model_name>
-    just where-is <model_name>
+    make where-is MODEL=<model_name>
 """
 
 from __future__ import annotations

@@ -35,7 +35,7 @@ properly. So we use the **thin-shim pattern**: a 3-4 line notebook
 file that does nothing except call into `src/`.
 
 ```python
-# apps/finance-payment-recon/notebooks/run.py
+# projects/finance-payment-recon/notebooks/run.py
 # Databricks notebook source
 from finance_payment_recon import _main
 _main.run(spark=spark, dbutils=dbutils)
@@ -63,7 +63,7 @@ involved.
 
 ## Exception: exploration notebooks
 
-Live under `apps/<name>/notebooks/explore/`. Never run by jobs.
+Live under `projects/<name>/notebooks/explore/`. Never run by jobs.
 Reviewer only checks that they don't:
 
 - Read or write production tables.
