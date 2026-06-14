@@ -30,7 +30,7 @@ export TF_VAR_catalog_name="<catalog>"
 
 ## Architecture
 
-Terraform project provisioning Databricks workspace resources using 6 child modules. The root [main.tf](main.tf) wires them together; state is stored in GitLab's built-in HTTP backend (no S3 needed).
+Terraform project provisioning Databricks workspace resources using 6 child modules. The root [main.tf](main.tf) wires them together; state is stored in an S3 backend (`sst-s3-gvt-sdp-databricks-internet-workspace`, key `terraform/state/terraform.tfstate`, with `use_lockfile` for state locking) — see [provider.tf](provider.tf).
 
 **Modules**:
 1. **[modules/iam/](modules/iam/)** — groups, users, service principals, workspace roles
