@@ -1,5 +1,8 @@
 # Data Analyst — 5-day onboarding
 
+> **Note:** The `dbt/` directory is planned but not yet scaffolded. dbt-specific
+> instructions below will apply once the first dbt project is created.
+
 You will build dbt models for your team's domain, classified for IM8 + PDPA.
 
 ## What you'll touch in this repo
@@ -9,7 +12,7 @@ You will build dbt models for your team's domain, classified for IM8 + PDPA.
 - `dbt/platform-core/` — read-only; you reference via `{{ ref('platform-core', ...) }}`
 
 ## Day 1 — tools
-- Install `uv`, `dbt-databricks`, `just`
+- Install `uv`, `dbt-databricks`, `make`
 - `cp dbt/profiles.example.yml ~/.dbt/profiles.yml` — fill in your dev creds
 - `cd dbt/<team>/ && uv run dbt deps && uv run dbt parse` — should succeed
 
