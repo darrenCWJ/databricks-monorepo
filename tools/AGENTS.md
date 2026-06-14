@@ -14,7 +14,7 @@ compliance, and developer productivity.
 | `check_pii_contract.py` | Ensure Restricted columns have mask declarations |
 | `check_ownership_sync.py` | Verify CODEOWNERS matches folder structure |
 | `lint_agents_md.py` | Validate AGENTS.md files follow conventions |
-| `where_is.py` | Locate dbt models and their consumers |
+| `where_is.py` | Locate dbt models and their consumers (requires `dbt/` — planned) |
 | `dump_access.py` | Export access grants for quarterly audit |
 | `diff_outputs.py` | Compare legacy vs new pipeline outputs during migration |
 | `import_job.py` | Import an existing Databricks Job into a DAB |

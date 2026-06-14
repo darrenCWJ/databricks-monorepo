@@ -7,9 +7,15 @@ configuration. Touch with care — changes here affect all environments.
 ## Structure
 ```
 infra/
-├── terraform-databricks/   # Workspace-level resources (clusters, pools, instance profiles)
-└── unity-catalog/          # Catalogs, schemas, grants, column masks, row filters
+├── modules/           # Terraform child modules (iam, compute, unity_catalog, grants, storage, workspace)
+├── main.tf            # Root module wiring child modules together
+├── variables.tf       # Input variables
+└── environments/      # Per-env tfvars (dev/staging/prod)
 ```
+
+## Related docs
+- `docs/walkthrough.md` — infra walkthrough
+- `docs/adr/0005-workspace-module-design.md` — workspace module architecture decision
 
 ## Rules
 1. All access grants must be declarative (in Terraform), never manual UI clicks.

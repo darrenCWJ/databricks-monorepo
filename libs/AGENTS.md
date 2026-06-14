@@ -1,31 +1,32 @@
 # libs/ — Shared Python libraries
 
 ## What goes here
-Internal Python packages reused by 2+ projects. Each directory under `libs/`
-IS the importable Python package — no `src/` wrapper.
+Internal Python packages reused by 2+ projects. Each library uses the
+`src/` layout (per ADR-0003): importable code lives under `libs/<name>/src/<package>/`.
 
 ## How to use a lib in a Databricks notebook
 
 ```python
 import sys
-sys.path.append("/Workspace/Repos/shared/mono-dev/libs")
+sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_toolbox/src")
+sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_databricks/src")
 
 from de_toolbox.pipeline.copper import create_copper_table
-from de_toolbox.delta import save_df_to_delta_with_column_mapping
+from de_databricks.common.session import create_databricks_session
 ```
 
 ## Structure per library
 
 ```
-libs/<package_name>/      <- This IS the importable package
-├── __init__.py           <- Public API re-exports
-├── AGENTS.md             <- Agent docs (lookup tables, rules)
-├── pyproject.toml        <- Package metadata + dependencies
-├── module_a.py           <- Top-level modules
-├── subpackage/           <- Grouped modules
-│   ├── __init__.py
-│   └── ...
-└── tests/                <- pytest tests
+libs/<lib_name>/              <- Library root (not importable directly)
+├── pyproject.toml            <- Package metadata; packages = ["src/<lib_name>"]
+├── AGENTS.md                 <- Agent docs (lookup tables, rules)
+├── src/
+│   └── <lib_name>/           <- THE importable package
+│       ├── __init__.py       <- Public API re-exports
+│       └── ...modules...
+├── notebooks/                <- Thin notebook shims (optional)
+└── tests/                    <- pytest tests (outside the package)
 ```
 
 ## AGENTS.md requirements for each lib
@@ -41,6 +42,7 @@ Every lib AGENTS.md must have:
 | Library | Package | Provides | Owner |
 |---------|---------|----------|-------|
 | de_toolbox | `de_toolbox` | Medallion pipelines, Data Vault, Kimball, DQ, profiling, connectors (Workday/SharePoint), UC permissions | @wei_hao_tan @jeffrey_siew |
+| de_databricks | `de_databricks` | Workspace admin: IAM, Unity Catalog, housekeeping, Tableau sync, catalog migration | @wei_hao_tan @jeffrey_siew |
 
 ## Blast radius
 
