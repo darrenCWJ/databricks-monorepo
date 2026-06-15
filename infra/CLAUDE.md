@@ -30,7 +30,7 @@ export TF_VAR_catalog_name="<catalog>"
 
 ## Architecture
 
-Terraform project provisioning Databricks workspace resources using 5 child modules. The root [main.tf](main.tf) wires them together; state is stored in GitLab's built-in HTTP backend (no S3 needed).
+Terraform project provisioning Databricks workspace resources using 6 child modules. The root [main.tf](main.tf) wires them together; state is stored in GitLab's built-in HTTP backend (no S3 needed).
 
 **Modules**:
 1. **[modules/iam/](modules/iam/)** — groups, users, service principals, workspace roles
@@ -38,6 +38,7 @@ Terraform project provisioning Databricks workspace resources using 5 child modu
 3. **[modules/unity_catalog/](modules/unity_catalog/)** — medallion schemas (bronze/silver/gold) under an existing catalog; instantiated once per schema in root
 4. **[modules/grants/](modules/grants/)** — UC privileges at catalog/schema/table level; 3-level conditional logic
 5. **[modules/storage/](modules/storage/)** — S3 buckets; instantiated 4 times (dev-data, landing, autoloader, workspace)
+6. **[modules/workspace/](modules/workspace/)** — full workspace provisioning: VPC, PrivateLink, root S3, cross-account IAM, MWS registration (see ADR-0005)
 
 **claims_pipeline/** — Databricks Asset Bundle (DAB) for the ETL pipeline; separate from Terraform.
 
