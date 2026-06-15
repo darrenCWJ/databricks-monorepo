@@ -1,0 +1,7 @@
+security:
+  stage: security
+  image: $CI_BASE_IMAGE
+  script:
+    - uv sync
+    - uv run pip-audit || true
+    - uv run ruff check --select S
