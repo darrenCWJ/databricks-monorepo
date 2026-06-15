@@ -1,5 +1,8 @@
 # Business Analyst — 5-day onboarding
 
+> **Note:** The `dbt/` directory is planned but not yet scaffolded. dbt-specific
+> references below will apply once the first dbt project is created.
+
 You will use the platform to answer questions, build dashboards, and request
 new data products. You do NOT need to clone the repo.
 

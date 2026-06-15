@@ -78,6 +78,7 @@ tight iteration loops.
 | `compute-affected` + `test-python` / `test-scala` / `test-dbt` | Test regressions, dbt parse failures |
 | `bundle-validate` | DAB syntax errors, missing service principals |
 | `security` (pip-audit, trivy, ruff -S) | Vulnerabilities |
+| `graph-rebuild` (on main) | Graph drift — undeclared cross-boundary dependencies |
 | CODEOWNERS-driven review | Human approval gates |
 
 Nothing reaches main without passing these — regardless of whether the

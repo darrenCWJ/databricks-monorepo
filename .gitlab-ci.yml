@@ -202,6 +202,24 @@ bundle-validate:
     - if: $CI_COMMIT_BRANCH =~ /^feature\//
     - if: $CI_COMMIT_BRANCH =~ /^hotfix\//
 
+# ── Knowledge graph rebuild + drift check ────────────────────────────────
+
+graph-rebuild:
+  stage: lint
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
+  before_script:
+    - pip install --quiet graphifyy pyyaml
+  script:
+    - graphify . --update --no-viz
+    - python tools/scripts/check_graph_drift.py
+  artifacts:
+    paths:
+      - graphify-out/graph.json
+      - graphify-out/GRAPH_REPORT.md
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
 # ── Blast radius reporting (schema-breaking + downstream deps) ────────
 
 blast-radius:

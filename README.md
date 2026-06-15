@@ -172,8 +172,8 @@ You maintain the shared infrastructure, CI/CD, and developer tooling.
 
 | Area | Location |
 |------|----------|
-| Unity Catalog grants, masks, row filters | `infra/unity-catalog/` |
-| Workspace provisioning | `infra/terraform-databricks/` |
+| Unity Catalog grants, masks, row filters | `infra/modules/unity_catalog/` + `infra/modules/grants/` |
+| Workspace provisioning | `infra/modules/workspace/` |
 | CI/CD pipeline | `.gitlab-ci.yml` |
 | Scaffolding tools | `tools/scripts/` |
 | Pre-commit hooks | `.pre-commit-config.yaml` |

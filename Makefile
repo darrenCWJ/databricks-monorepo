@@ -230,3 +230,17 @@ check-deps: ## Check for breaking schema changes and report downstream impact
 .PHONY: check-contract-drift
 check-contract-drift: ## Validate contracts/schema.yml matches code + input existence
 	uv run python tools/scripts/check_contract_drift.py
+
+# ----- knowledge graph (graphify) -----
+.PHONY: graph
+graph: ## Regenerate full knowledge graph
+	graphify . --no-viz
+
+.PHONY: graph-update
+graph-update: ## Incremental graph update (changed files only, no LLM cost for code)
+	graphify . --update --no-viz
+
+.PHONY: graph-check
+graph-check: ## Validate AGENTS.md claims against knowledge graph
+	graphify . --cluster-only --no-viz
+	uv run python tools/scripts/check_graph_drift.py

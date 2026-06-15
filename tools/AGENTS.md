@@ -18,6 +18,7 @@ compliance, and developer productivity.
 | `dump_access.py` | Export access grants for quarterly audit |
 | `diff_outputs.py` | Compare legacy vs new pipeline outputs during migration |
 | `import_job.py` | Import an existing Databricks Job into a DAB |
+| `check_graph_drift.py` | Compare graphify knowledge graph against AGENTS.md folder claims |
 
 ## Rules
 1. Scripts are owned by `@cdo/platform-team`.

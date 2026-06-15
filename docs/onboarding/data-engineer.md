@@ -12,7 +12,7 @@ You will build and ship Databricks Asset Bundles (DABs) for your team.
 - `libs/de_toolbox/` — shared pipeline library (medallion, DQ, connectors)
 
 ## Day 1 — tools & first clone
-- Install `uv`, `just`, `databricks` CLI (see root README §Tooling install)
+- Install `uv`, `make`, `databricks` CLI (see root README §Quick start)
 - `git clone` the repo
 - `make setup` — installs all deps, sets up pre-commit
 - Read root `AGENTS.md` and at least one `projects/<team>-*/AGENTS.md`
