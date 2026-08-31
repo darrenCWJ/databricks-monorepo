@@ -171,6 +171,7 @@ changed, when, and who approved it. Combined with the WORM deploy trail from
 ## See also
 
 - `branching-strategy.md` — branches, merge trains, hotfixes, rollback
+- `gitlab-setup-release-model.md` — the GitLab configuration these procedures assume
 - `docs/compliance/soc2.md` — how these map to SOC2 controls
 - `docs/runbooks/access-control.md` — the four grant layers
 - `docs/superpowers/specs/2026-09-01-modular-release-model-design.md` — full design

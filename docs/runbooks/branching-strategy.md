@@ -285,6 +285,7 @@ side — run `notebooks/_pre_push_check.py` first. See
 ## See also
 
 - `release-process.md` — the promotion procedure
+- `gitlab-setup-release-model.md` — the GitLab configuration that enforces all of this
 - `docs/superpowers/specs/2026-09-01-modular-release-model-design.md` — the full design and its rationale
 - `bootstrap-ci-and-audit.md` — CI auth + audit bucket setup
 - `codeowners-maintenance.md` — when CODEOWNERS changes

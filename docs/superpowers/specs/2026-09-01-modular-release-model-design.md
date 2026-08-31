@@ -32,7 +32,7 @@ the failure mode.
 | Plane | Artifact | Rate | Approver | Answers |
 |---|---|---|---|---|
 | Code | `main` + per-project tags | many/day | CODEOWNERS | what is possible |
-| Release | `release/{dev,staging,prod}.yml` | few/day | `@cdo-release-approvers` | what is where, and running |
+| Release | `release/{dev,staging,prod}/<project>.yml` | few/day | `@cdo-release-approvers` | what is where, and running |
 | Infra | `infra/` Terraform | weekly | platform + governance | what code may touch |
 
 A fourth plane — **data** — exists and git cannot describe it. Delta table
@@ -43,42 +43,56 @@ reconcilers over the same resources will fight.
 
 ## The release manifest
 
-Split per environment so CODEOWNERS can route per environment. A generated
-`release/STATE.md` gives the single-glance view.
+**One file per project per environment.** A generated `release/STATE.md` gives
+the single-glance view.
 
 ```yaml
-# release/prod.yml
-rollback_depth_days: 21          # also drives Delta deletedFileRetentionDuration
-
-projects:
-  finance/customer360-etl:
-    state: active
-    ref: v/finance-customer360-etl/2026-08-17.1
-
-  supplier/spend-report:
-    state: paused
-    ref: v/supplier-spend-report/2026-07-30.2
-    reason: awaiting FY27 cost-centre migration
-    ticket: CHG-14882
-    review_by: 2026-10-01
-
-  legacy/spend-etl-v1:
-    state: retired
-    retired_on: 2026-08-20
-    reason: superseded by supplier/spend-report
-    ticket: CHG-14201
-    data_disposition: retained
+# release/prod/finance-customer360-etl.yml
+state: active
+ref: v/finance-customer360-etl/2026-08-17.1
+```
+```yaml
+# release/prod/supplier-spend-report.yml
+state: paused
+ref: v/supplier-spend-report/2026-07-30.2
+reason: awaiting FY27 cost-centre migration
+ticket: CHG-14882
+review_by: 2026-10-01
+```
+```yaml
+# release/prod/legacy-spend-etl-v1.yml
+state: retired
+retired_on: 2026-08-20
+reason: superseded by supplier/spend-report
+ticket: CHG-14201
+data_disposition: retained
 ```
 
-`release/dev.yml` uses `ref: main` for every project — dev tracks the tip and
-needs no manifest MR. Staging and prod pin tags and move only by MR.
+`rollback_depth_days` and other cross-cutting policy live in `release/policy.yml`,
+which changes rarely.
+
+`release/dev/<project>.yml` uses `ref: main` — dev tracks the tip and needs no
+manifest MR. Staging and prod pin tags and move only by MR.
+
+### Why one file per project, not one file per environment
+
+An earlier draft used a single `release/prod.yml` holding every project. That
+makes the manifest the one file every promotion edits — precisely the shape that
+generates merge conflicts between teams who otherwise never touch the same code.
+In a monorepo with directory-disjoint ownership, almost all conflicts come from a
+handful of shared files; the fix is to stop having them.
+
+One file per project means two teams promoting simultaneously edit different
+files and cannot conflict. The single-pane view is preserved by generating
+`release/STATE.md` in CI rather than by authoring one big file. It also lets
+CODEOWNERS route per environment *and* per project if that is ever wanted.
 
 - **Tags are created by CI**, automatically, when a project goes green on `main`.
   Nobody tags by hand. Tags are cheap immutable names, not decisions.
 - **The deploy trigger is merging a manifest change**, not pushing a tag. This is
   the correction to the tag-triggered model: a global tag promotes temporally, a
   manifest promotes per project.
-- **`git log -p release/prod.yml` is the audit trail** — timestamped,
+- **`git log -p release/prod/` is the audit trail** — timestamped,
   approver-attributed, complete, in one file. Stronger evidence than tags alone,
   which record what *could* have shipped.
 
@@ -203,10 +217,11 @@ common source of surprise cloud spend.
 
 ```
 release/
-  dev.yml          CODEOWNERS -> team leads
-  staging.yml      CODEOWNERS -> @cdo-release-approvers
-  prod.yml         CODEOWNERS -> @cdo-release-approvers
-  schema.json
+  policy.yml       rollback_depth_days and other cross-cutting policy
+  schema.json      validates every manifest file
+  dev/<project>.yml       CODEOWNERS -> @cdo-code-owners
+  staging/<project>.yml   CODEOWNERS -> @cdo-release-approvers
+  prod/<project>.yml      CODEOWNERS -> @cdo-release-approvers
   STATE.md         generated, read-only, single pane
 platform/
   targets.yml      one copy of dev/staging/prod workspace + variable defs
@@ -231,7 +246,7 @@ The only thing that touches staging or prod. No human runs `bundle deploy -t pro
 ```
 reconcile.py --target prod
   for each project:
-    desired <- release/prod.yml
+    desired <- release/prod/<project>.yml
     actual  <- workspace (jobs API + resource tags)
     plan the diff, then:
       absent  -> active   git checkout <ref>; bundle deploy -t prod; unpause
@@ -295,6 +310,9 @@ sandbox-deploy:
 
 ## GitLab settings
 
+Step-by-step configuration, verification tests and the governance control map
+live in `docs/runbooks/gitlab-setup-release-model.md`. Summary:
+
 **Merge requests:** fast-forward merge; merge trains on; merged results pipelines
 on; squash **required**; pipelines must succeed; all threads resolved; delete
 source branch by default; skipped-pipelines-successful **off**.
@@ -313,6 +331,28 @@ code owner approval required.
 **1 approval, not the pipeline triggerer**. That is where SOC2 segregation of
 duties lands, enforced by the tool.
 
+**Push rules** (Premium) enforce the branch-name and commit-message conventions at
+the pre-receive hook, and `deny_delete_tag` protects the `v/` tags that are
+simultaneously our rollback targets and our audit evidence.
+
+## Ordering and throughput
+
+Merge trains run **parallel** merged-results pipelines: each queued MR is tested
+against the target plus every change ahead of it, and merges once its own pipeline
+passes and all preceding MRs have merged. This is the speculative execution
+described in Uber's SubmitQueue paper, so throughput is not capped at one MR per
+pipeline duration.
+
+A failed train pipeline drops that MR and immediately restarts pipelines for
+everything behind it; the failed pipeline cannot be retried directly. Two
+consequences: put `retry:` on network-dependent jobs so flakes do not cost the
+queue, and keep MRs small.
+
+Manifest promotions carry no ordering constraint — two teams promoting at once
+edit different files. The one genuine cross-project ordering constraint is data:
+promoting a producer can break a consumer running an older vintage. That is what
+`contract-gate` exists to catch.
+
 Fast-forward merge with merge trains requires GitLab 16.4+ Premium/Ultimate; on
 self-managed it may need the `fast_forward_merge_trains_support` feature flag.
 Verify before adopting.
@@ -323,7 +363,7 @@ Verify before adopting.
 |---|---|---|---|
 | Data engineer | feature branch, sandbox schema, tests, contracts | — | deploys to staging or prod |
 | CODEOWNER | code quality in their folder | MRs into `main` | approves own MR |
-| Release approver | `release/staging.yml`, `release/prod.yml` | promotions, pauses, retires | approves a pipeline they triggered |
+| Release approver | `release/staging/`, `release/prod/` | promotions, pauses, retires | approves a pipeline they triggered |
 | Platform team | `platform/`, `infra/`, the reconciler | infra and CI changes | edits a team's project code |
 
 ## Open decisions
