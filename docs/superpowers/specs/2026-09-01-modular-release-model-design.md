@@ -219,7 +219,7 @@ common source of surprise cloud spend.
 release/
   policy.yml       rollback_depth_days and other cross-cutting policy
   schema.json      validates every manifest file
-  dev/<project>.yml       CODEOWNERS -> @cdo-code-owners
+  dev/<project>.yml       CODEOWNERS -> the team that owns the project
   staging/<project>.yml   CODEOWNERS -> @cdo-release-approvers
   prod/<project>.yml      CODEOWNERS -> @cdo-release-approvers
   STATE.md         generated, read-only, single pane
@@ -361,7 +361,7 @@ Verify before adopting.
 
 | Role | Owns | Approves | Never does |
 |---|---|---|---|
-| Data engineer | feature branch, sandbox schema, tests, contracts | — | deploys to staging or prod |
+| Data engineer | feature branch, sandbox schema, tests, contracts, `release/dev/` for their own projects | dev-only manifest changes in their own team | deploys to staging or prod |
 | CODEOWNER | code quality in their folder | MRs into `main` | approves own MR |
 | Release approver | `release/staging/`, `release/prod/` | promotions, pauses, retires | approves a pipeline they triggered |
 | Platform team | `platform/`, `infra/`, the reconciler | infra and CI changes | edits a team's project code |
@@ -376,7 +376,10 @@ Verify before adopting.
    Mitigations to build in from day one: batch promotions (one MR bumping several
    ready projects) and CI-determined auto-approval for the expedited tier
    (single bundle, no schema change, no Restricted columns).
-3. Lib versioning. Independent promotion is not fully achievable while
+3. Dev ownership is settled: teams manage `release/dev/` for their own projects.
+   The CODEOWNERS gate is the merge into `main`, not a second gate on a team's own
+   sandbox environment.
+4. Lib versioning. Independent promotion is not fully achievable while
    `sys.path.append` points every project at one shared workspace path. Moving
    libs to versioned wheels published per bundle is a prerequisite, and is not
    scoped in this document.

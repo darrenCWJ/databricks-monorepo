@@ -127,12 +127,14 @@ break-glass procedure and write it into `docs/runbooks/` before you need it.
 
 ## Step 6 — CODEOWNERS
 
-Route the release manifest to the approvers, and each environment separately, so
-pausing something in dev does not require a release approver:
+Route each environment separately. **Teams manage their own dev.** The CODEOWNERS
+gate is the merge into `main` — it is not a second gate on a team's own sandbox
+environment, so a dev entry routes to the same people who own the project's code:
 
 ```
-# Release control plane
-/release/dev/                 @cdo-code-owners
+# Release control plane — dev is owned by the team that owns the project
+/release/dev/finance-*        @cdo-finance-leads
+/release/dev/supplier-*       @cdo-supplier-leads
 /release/staging/             @cdo-release-approvers
 /release/prod/                @cdo-release-approvers
 

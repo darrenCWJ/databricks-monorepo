@@ -277,9 +277,12 @@ side — run `notebooks/_pre_push_check.py` first. See
 
 | Role | Owns | Approves | Never does |
 |---|---|---|---|
-| Data engineer | Feature branch, sandbox schema, tests, contracts | — | Deploys to staging or prod |
+| Data engineer | Feature branch, sandbox schema, tests, contracts, `release/dev/` for own projects | Own team's dev manifest changes | Deploys to staging or prod |
 | CODEOWNER | Code quality in their folder | MRs into `main` | Approves their own MR |
 | Release approver | `release/staging/`, `release/prod/` | Promotions, pauses, retires | Approves a pipeline they triggered |
+
+**Dev belongs to the team that owns the project.** The CODEOWNERS gate is the
+merge into `main` — there is no second gate on a team's own sandbox environment.
 | Platform team | `platform/`, `infra/`, the reconciler | Infra and CI changes | Edits a team's project code |
 
 ## See also
