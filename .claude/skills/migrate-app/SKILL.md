@@ -107,11 +107,27 @@ de_databricks    Workspace admin: session management, IAM/SCIM,        YES if ma
 dependencies = ["de-toolbox", "de-databricks"]  # only those you actually import
 ```
 
-And in notebooks (per ADR-0003 src/ layout):
+And attach the wheels in `databricks.yml` (per ADR-0006):
+```yaml
+artifacts:
+  de_toolbox:
+    type: whl
+    path: ../../../libs/de_toolbox
+    build: uv build --wheel
+
+resources:
+  jobs:
+    <job_name>:
+      tasks:
+        - task_key: <task>
+          libraries:
+            - whl: ../../../libs/de_toolbox/dist/*.whl
+```
+
+Notebooks then import normally — **never** `sys.path.append` to a workspace path,
+which couples every project to one library copy. CI fails on it.
 ```python
-import sys
-sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_toolbox/src")
-sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_databricks/src")
+from de_toolbox.pipeline.copper import create_copper_table
 ```
 
 ### Step 1: Scan the legacy source

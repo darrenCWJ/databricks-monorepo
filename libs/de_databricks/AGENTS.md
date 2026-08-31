@@ -5,7 +5,10 @@ Tableau sync, workspace onboarding, and catalog migration.
 
 **Location**: `libs/de_databricks/src/de_databricks/`
 **Import path**: `from de_databricks.<module> import <function>`
-**Notebook setup**: `sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_databricks/src")`
+**Consumed as**: a wheel built by the consuming bundle (ADR-0006). Notebooks
+just `import`; the project declares an `artifacts` entry and a task
+`libraries: - whl:` in its `databricks.yml`. Never sys.path.append to a
+workspace path.
 
 ## Owner
 @wei_hao_tan @jeffrey_siew

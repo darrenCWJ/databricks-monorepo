@@ -5,7 +5,10 @@ Kimball, data quality, and external connectors.
 
 **Location**: `libs/de_toolbox/src/de_toolbox/`
 **Import path**: `from de_toolbox.<module> import <function>`
-**Notebook setup**: `sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_toolbox/src")`
+**Consumed as**: a wheel built by the consuming bundle (ADR-0006). Notebooks
+just `import`; the project declares an `artifacts` entry and a task
+`libraries: - whl:` in its `databricks.yml`. Never sys.path.append to a
+workspace path.
 
 ## Owner
 @wei_hao_tan @jeffrey_siew

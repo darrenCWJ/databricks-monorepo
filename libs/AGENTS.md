@@ -6,14 +6,23 @@ Internal Python packages reused by 2+ projects. Each library uses the
 
 ## How to use a lib in a Databricks notebook
 
-```python
-import sys
-sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_toolbox/src")
-sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_databricks/src")
+Libs ship as wheels built by the bundle that consumes them (ADR-0006). The
+notebook just imports — no path manipulation:
 
+```python
 from de_toolbox.pipeline.copper import create_copper_table
 from de_databricks.common.session import create_databricks_session
 ```
+
+The project declares the lib in three places, all of which must agree:
+`pyproject.toml` dependencies, an `artifacts` entry in `databricks.yml`, and a
+task `libraries: - whl:`. See `.claude/rules/lib-imports.md`.
+
+**Never `sys.path.append` to a workspace path.** One shared copy means promoting one
+project silently changes the library under every other project. CI fails on it.
+
+For interactive exploration inside a Git Folder:
+`%pip install -e /Workspace/Repos/<you>/mono-dev/libs/de_toolbox`
 
 ## Structure per library
 

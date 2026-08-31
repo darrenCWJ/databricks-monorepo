@@ -18,7 +18,8 @@ Two concrete failures in the current design:
    merged before N. `affected.py` scopes the deploy *work*; it cannot exclude
    something already merged. The real case is work that is merged, reviewed and
    green but not *business*-ready. Green != ready.
-2. **Shared libs are a workspace-global singleton.** `.claude/rules/lib-imports.md`
+2. **Shared libs are a workspace-global singleton.** *(Settled 2026-09-01 by
+   ADR-0006: libs now ship as wheels built by the consuming bundle.)* `.claude/rules/lib-imports.md`
    and `docs/adr/0003-shared-library-layout.md` mandate
    `sys.path.append("/Workspace/Repos/shared/mono-dev/libs/<lib>/src")`. One path,
    one copy per workspace. Promoting one project moves the lib for every project,
@@ -379,7 +380,9 @@ Verify before adopting.
 3. Dev ownership is settled: teams manage `release/dev/` for their own projects.
    The CODEOWNERS gate is the merge into `main`, not a second gate on a team's own
    sandbox environment.
-4. Lib versioning. Independent promotion is not fully achievable while
-   `sys.path.append` points every project at one shared workspace path. Moving
-   libs to versioned wheels published per bundle is a prerequisite, and is not
-   scoped in this document.
+4. Lib versioning — **settled**. `docs/adr/0006-libs-as-bundle-built-wheels.md`:
+   libraries are built as wheels by the consuming bundle from its own pinned ref,
+   so each project carries its own copy. No registry needed, no version pin — the
+   git ref is the version. Remaining sub-question: Databricks Apps and serverless
+   resolve dependencies from `requirements.txt` and cannot use task `libraries`;
+   that needs its own answer before the first `app` or `api` project ships.

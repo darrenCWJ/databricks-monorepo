@@ -24,9 +24,6 @@ pip install -e ".[dev]"
 ## Usage
 
 ```python
-import sys
-sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_databricks/src")
-
 from de_databricks.common.session import create_databricks_session
 session = create_databricks_session()
 ```

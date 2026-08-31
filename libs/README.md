@@ -7,25 +7,50 @@ is a self-contained, importable Python package.
 
 ### In a Databricks notebook
 
-```python
-import sys
-# Each lib has its own src/ path:
-sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_toolbox/src")
-sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_databricks/src")
+Libs are installed onto the job's compute as wheels, so you just import:
 
-# Now import from any library:
+```python
 from de_toolbox.pipeline.copper import create_copper_table
 from de_databricks.common.session import create_databricks_session
 ```
 
-### In a Databricks Job (bundle.yml)
+### In a Databricks Job (databricks.yml)
 
-Add the libs src path to your notebook's sys.path at the top:
+The consuming bundle builds the wheel from source at its own pinned git ref and
+attaches it to the task (ADR-0006):
+
+```yaml
+artifacts:
+  de_toolbox:
+    type: whl
+    path: ../../../libs/de_toolbox
+    build: uv build --wheel
+
+resources:
+  jobs:
+    <job_name>:
+      tasks:
+        - task_key: <task>
+          notebook_task:
+            notebook_path: ./notebooks/<notebook>.py
+          libraries:
+            - whl: ../../../libs/de_toolbox/dist/*.whl
+```
+
+Also declare the lib in the project's `pyproject.toml` dependencies — that is what
+`make affected` reads for blast radius and what `check_lib_deps.py` enforces.
+
+**Never `sys.path.append` to a workspace path.** One shared copy means promoting
+one project silently changes the library under every other project in that
+workspace. CI fails on it.
+
+### Exploring a lib interactively
+
+Inside a Databricks Git Folder, for exploration only:
 
 ```python
-# First cell of any job notebook:
-import sys
-sys.path.append("/Workspace/Repos/shared/mono-dev/libs/de_toolbox/src")
+%pip install -e /Workspace/Repos/<your-user>/mono-dev/libs/de_toolbox
+dbutils.library.restartPython()
 ```
 
 ### In local development / pytest
@@ -62,10 +87,9 @@ libs/<lib_name>/
     └── test_*.py
 ```
 
-Each lib's `sys.path.append` points to its own `src/` directory:
-```python
-sys.path.append("/Workspace/Repos/shared/mono-dev/libs/<lib_name>/src")
-```
+Each lib is built as a wheel by the bundle that consumes it (ADR-0006), so a
+notebook imports it directly with no path manipulation. The project's git ref is
+the library version — there is no separate version pin.
 
 ## Naming convention
 

@@ -170,7 +170,8 @@ Every lib MUST have an AGENTS.md with these sections in order:
 
 **Location**: `libs/<lib_name>/src/<lib_name>/`
 **Import path**: `from <lib_name>.<module> import <function>`
-**Notebook setup**: `sys.path.append("/Workspace/Repos/shared/mono-dev/libs/<lib_name>/src")`
+**Consumed as**: a wheel built by the consuming bundle (ADR-0006). Notebooks just
+`import`; the bundle declares an `artifacts` entry and a task `libraries: - whl:`.
 
 ## Owner
 @<owner_handles>
