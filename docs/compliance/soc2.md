@@ -14,9 +14,13 @@
 ## Branch model maps to SOC2 evidence
 
 - `main` is always green and deployable to dev. Every merge writes an audit record.
-- `release/YYYY-MM-DD` branches are cut from main and are the audit artefact for
-  what shipped to staging/prod on that date. Re-runnable for forensics.
-- Hotfix: cherry-pick to active `release/*` and back-merge to main.
+- Immutable per-project tags (`v/<project>/<date>.<n>`) are created by CI and are
+  the artefact for what shipped. A tag is never moved or deleted.
+- The release manifest (`release/prod/`) records which tag is live in each
+  environment. `git log -p release/prod/` is a complete, timestamped,
+  approver-attributed history of every production change — stronger evidence than
+  a branch, which only shows what *could* have shipped.
+- Hotfix: fix on `main`, CI tags it, bump the manifest. No cherry-pick.
 
 ## Quarterly review checklist
 

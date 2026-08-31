@@ -287,8 +287,8 @@ Before approving:
 | Environment | Catalog | Trigger | Purpose |
 |-------------|---------|---------|---------|
 | **dev** | `cdo_dev` | Auto on merge to `main` | Sandbox, fast iteration |
-| **staging** | `cdo_staging` | Manual on `release/*` branch | Pre-prod validation |
-| **prod** | `cdo_prod` | Manual on `release/*` branch (separate approver) | Production |
+| **staging** | `cdo_staging` | MR bumping `release/staging/<project>.yml` | Pre-prod validation |
+| **prod** | `cdo_prod` | MR bumping `release/prod/<project>.yml` (separate approver) | Production |
 
 See `databricks.yml` for full target configuration.
 
@@ -298,10 +298,14 @@ See `databricks.yml` for full target configuration.
 
 | Branch | Purpose | Lifetime |
 |--------|---------|----------|
-| `main` | Trunk. Always green. Auto-deploys to dev. | Permanent |
-| `feature/<team>-<desc>` | Your day-to-day work | Days to weeks |
-| `release/YYYY-MM-DD` | Promoted through staging and prod | 6-12 months (audit) |
-| `hotfix/<ticket>` | Emergency fix on a live release | Hours |
+| `main` | Trunk. Always green. Auto-deploys to dev. Never rebased. | Permanent |
+| `feature/<team>-<desc>` | Your day-to-day work | Days |
+| `hotfix/<desc>` | Emergency fix, branched off `main` | Hours |
+| `recovery/<tag>` | Rare; from a `v/` tag when `main` is unshippable | Hours |
+
+There are no `release/*` branches. A release is an immutable per-project tag
+(`v/<project>/<date>.<n>`) created by CI and assigned to an environment by the
+release manifest.
 
 Full details: `docs/runbooks/branching-strategy.md`
 

@@ -32,9 +32,11 @@ You will build dbt models for your team's domain, classified for IM8 + PDPA.
 - Include `not_null` test on the PK, `unique` if applicable
 - Use `dbt-expectations` for column-value ranges where useful
 
-## Day 5 — promote via release branch
-- Your model is merged to `main` and ran in dev
-- Watch it ride the next `release/YYYY-MM-DD` to staging then prod
+## Day 5 — promote your own project
+- Your model is merged to `main`, tagged by CI, and running in dev
+- Open an MR bumping your project's `ref` in `release/staging/<project>.yml`
+- After the bake, a second MR bumps `release/prod/<project>.yml`
+- Only your project moves — you are never waiting on anyone else's work
 
 ## Rules to internalise
 1. Every column needs `meta.pii`, `meta.classification`, `meta.sensitivity`,

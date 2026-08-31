@@ -2,10 +2,13 @@
 
 ## Branching
 
-- `main` — trunk, auto-deploys to dev. Never push directly.
-- `feature/<team>-<desc>` — day-to-day work. One feature, one branch.
-- `release/YYYY-MM-DD` — cut weekly by release manager. Never rebase.
-- `hotfix/<ticket>` — branch from release, cherry-pick back to main.
+- `main` — trunk, auto-deploys to dev. Never push directly. Never rebased.
+- `feature/<team>-<desc>` — day-to-day work. One feature, one branch. Days, not weeks.
+- `hotfix/<desc>` — branch from `main`, same flow, expedited review. No cherry-pick.
+- `recovery/<tag>` — rare; from a `v/` tag, only when `main` is unshippable.
+
+There are **no release branches**. A release is a per-project tag (`v/<project>/<date>.<n>`)
+created by CI, assigned to an environment by the release manifest.
 
 ## Merge Requests
 
@@ -24,12 +27,17 @@
 
 ## Deploy Flow
 
-- Merge to `main` → auto-deploy to dev (no approval)
-- `release/*` → manual trigger to staging (release manager)
-- `release/*` → manual trigger to prod (different approver than merger)
+- Merge to `main` → CI tags the affected projects → auto-deploy to dev (no approval)
+- MR bumping `release/staging/<project>.yml` → `reconcile-staging` (release approver)
+- MR bumping `release/prod/<project>.yml` → `reconcile-prod` (approver != triggerer)
+
+Promotion is per project. One project moving does not move any other.
 
 ## What NOT to Do
 
-- Never open MRs from release to main (only cherry-pick hotfixes).
-- Never delete release branches (audit evidence, keep 12+ months).
+- Never create a `release/*` branch — promotion is a manifest MR, not a branch cut.
+- Never run `databricks bundle deploy` against staging or prod by hand;
+  `tools/scripts/reconcile.py` is the only thing that touches them.
+- Never move or delete a `v/` tag — it is the rollback target and the audit record.
+- Never let a manifest state change delete data. `retired` removes jobs, not tables.
 - Never skip CI or bypass CODEOWNERS.

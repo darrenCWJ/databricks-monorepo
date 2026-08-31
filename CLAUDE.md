@@ -42,7 +42,7 @@ Always run `git commit` and `git push` with `dangerouslyDisableSandbox: true`.
 
 ## Git workflow — IMPORTANT
 
-**YOU MUST NEVER push directly to `main` or `release/*`.** Always use a branch + MR.
+**YOU MUST NEVER push directly to `main`.** Always use a branch + MR.
 
 **Before creating a branch, always check first:**
 ```bash
@@ -54,15 +54,19 @@ Only create a new branch if none fits. **Ask the user to confirm** if existing c
 | Situation | Branch | MR target |
 |-----------|--------|-----------|
 | Feature / fix / chore | `feature/<team>-<desc>` | `main` |
-| Prod hotfix | `hotfix/<ticket>` branched off active `release/*` | that `release/*` |
-| Release cut | `release/YYYY-MM-DD` from `main` | n/a |
+| Prod hotfix | `hotfix/<desc>` branched off `main` | `main` |
+| Promotion to stg/prod | MR editing `release/staging/` or `release/prod/` | `main` |
+| Recovery (rare) | `recovery/<tag>` from a `v/` tag, only when `main` is unshippable | `main` |
 
 ### Branch naming enforcement (MANDATORY)
 
 Before pushing ANY branch, validate the name matches one of these patterns:
 - `feature/<team>-<desc>` (e.g. `feature/platform-migration-skills`)
-- `hotfix/<ticket>` (e.g. `hotfix/CHG-12345`)
-- `release/YYYY-MM-DD` (e.g. `release/2026-06-04`)
+- `hotfix/<desc>` (e.g. `hotfix/budget-null-costcentre`)
+- `recovery/<tag>` (e.g. `recovery/v-finance-customer360-etl-2026-08-17.1`)
+
+There are **no `release/*` branches**. Promotion is an MR against the release
+manifest, not a branch cut. See `docs/runbooks/branching-strategy.md`.
 
 **REJECT and ask the user to correct if the branch name:**
 - Uses `feat/` instead of `feature/`

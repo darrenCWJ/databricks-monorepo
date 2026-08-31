@@ -51,9 +51,12 @@ See `libs/AGENTS.md` for the registry of available libraries and their exports.
    For notebook-only projects (pipelines/streaming/capture), logic can live directly in notebooks.
 6. Do not commit secrets. Use Databricks secret scopes; reference via
    `${secrets.scope.key}` in `bundle.yml`.
-7. **Never push directly to `main` or `release/*`.** All changes go through
-   a `feature/<team>-<desc>` branch + MR. Hotfixes branch off the active
-   `release/*`. See `docs/runbooks/branching-strategy.md`.
+7. **Never push directly to `main`.** All changes go through a
+   `feature/<team>-<desc>` branch + MR. Hotfixes branch off `main` too — there
+   are no `release/*` branches. Promotion to staging/prod is an MR editing the
+   release manifest (`release/staging/`, `release/prod/`), one file per project,
+   so each project promotes independently. See
+   `docs/runbooks/branching-strategy.md`.
 
 ## Agents in scope
 Claude Code, Cursor, Copilot, Aider, Databricks Code Assistant / Genie Code,
