@@ -6,35 +6,49 @@ deploying the first version. Plan for ~half a day end-to-end (excluding
 business logic).
 
 Use this when:
-- You're starting a greenfield pipeline (no legacy to migrate).
-- You're not sure whether what you're building is an app, a lib, a dbt
-  project, or some combination.
+- You're starting a greenfield project (no legacy to migrate).
+- You're not sure which function type or project style to use.
+
+> This runbook is the human companion to the `creating-apps` skill
+> (`.claude/skills/creating-apps/`), which drives the same flow interactively
+> for AI agents. Keep the two in sync — the skill is the source of truth.
 
 If you're migrating an existing legacy script, see
 `docs/runbooks/migrate-a-script.md` instead.
 If you're importing an existing Databricks Job, see
 `docs/runbooks/import-existing-job.md`.
 
-## Step 0 — decide what kind of project this is
+## Step 0 — decide the function type and style
 
-Three questions answer it:
+Every project is one **Databricks Asset Bundle (DAB)** under
+`projects/<domain>/`. Two choices define it.
 
-| Question | Yes | No |
-|---|---|---|
-| Does this transform data that lives in Unity Catalog into a new table that other teams will read? | Add a **dbt project** (or extend an existing one) | Skip |
-| Does this ingest data from outside UC, run ML, stream, or do anything non-SQL? | Add an **app** (DAB) under `projects/` | Skip |
-| Is this code reused by 2+ projects? | Add a **library** under `libs/` | Inline it where used; promote to a lib later if needed |
+**1. Function type** — what kind of work it does:
 
-Common combinations:
-
-| What you're building | What you create |
+| Function | What it is |
 |---|---|
-| Daily batch pipeline that reads bronze, joins, writes silver/gold | App + dbt project for the SQL portion (Pattern A) |
-| Streaming ingestion | App only (typically Scala). No dbt. |
-| Pure SQL transforms over existing Delta tables | dbt project (or models added to an existing one) |
-| ML training pipeline | App (Python + MLflow). Reads from dbt marts. |
-| Cross-team library | Promote to `libs/` (rare — only when 2+ projects will use it) |
-| App serving low-latency OLTP reads | App + Lakebase sync (Pattern D) — see `lakebase-sync-design.md` |
+| `pipeline` | batch ETL, ingestion, orchestration |
+| `streaming` | real-time / continuous processing |
+| `app` | web apps (Streamlit, Dash, Flask, React) |
+| `dashboard` | BI dashboards / Lakeview |
+| `api` | REST / HTTP service endpoints |
+| `sync` | low-latency read (Lakebase sync) |
+| `capture` | operational capture (CDC / events) |
+
+**2. Project style** — how the code is laid out:
+
+| Style | Default for | Layout |
+|---|---|---|
+| `notebook` | `pipeline`, `streaming`, `capture` | logic in `notebooks/`, no `src/` package, minimal `pyproject.toml` (lib deps only), **not** a uv workspace member |
+| `src` | `app`, `api`, `dashboard`, `sync` | `notebooks/` are thin shims calling tested `src/<pkg>/` code, with `tests/` and `contracts/schema.yml` |
+
+**Reusable code** shared by 2+ projects goes in a **library** under `libs/`
+(not a project). Inline it in one project first; promote it to a lib only when a
+second consumer appears.
+
+> There is **no dbt project type** in this monorepo. SQL transforms live inside a
+> project's `src/`/`notebooks/` using the medallion libraries in `de_toolbox`
+> (copper → bronze → silver → gold).
 
 ## Step 1 — choose a name and confirm the owner
 
@@ -42,45 +56,35 @@ Naming convention:
 
 | Kind | Pattern | Example |
 |---|---|---|
-| App | `projects/<domain>/<function>-<subdomain>` | `projects/fraud-alert-daily` |
+| Project (DAB) | `projects/<domain>/<function>-<subdomain>` | `projects/fraud/alert-daily` |
 | Library | `libs/<team>_common` or `libs/common_<thing>` | `libs/finance_common` |
-| dbt project | `dbt/<team>` | `dbt/finance` |
 
-Prefix is the team handle (lowercase, hyphenated). The prefix routes
-CODEOWNERS, `affected.py`, pre-commit boundary checks, and CI fan-out.
+The `<domain>` is the team handle (lowercase). The full project name is
+`<function>-<subdomain>`, with an optional wildcard suffix (`-daily`, `-v2`,
+`-batch`) to disambiguate. The domain prefix routes CODEOWNERS, `affected.py`,
+pre-commit boundary checks, and CI fan-out.
 
-Before scaffolding, check for name collision: `ls projects/ | grep <name>`.
+Before scaffolding, check for a name collision:
+`ls projects/<domain>/ 2>/dev/null | grep <name>`.
 Cross-team data reads are flagged during code review, not at scaffold time.
 
 ## Step 2 — scaffold
 
-For an app (Python):
-
 ```bash
-make new-project DOMAIN=<domain> FUNCTION=pipeline NAME=fraud-alert-daily KIND=python
-```
+# Python project (the style is inferred from the function type)
+make new-project DOMAIN=fraud FUNCTION=pipeline NAME=alert-daily KIND=python
 
-For an app (Scala):
+# Scala project (e.g. streaming)
+make new-project DOMAIN=fraud FUNCTION=streaming NAME=events-v2 KIND=scala
 
-```bash
-make new-project DOMAIN=<domain> FUNCTION=pipeline NAME=fraud-streaming-v2 KIND=scala
-```
-
-For a library:
-
-```bash
+# Shared library
 make new-lib NAME=finance-common
 ```
 
-For a dbt project (manual — no scaffold yet):
-
-```bash
-mkdir -p dbt/finance/{models/staging,models/marts,macros,tests,seeds}
-cp dbt/platform-core/dbt_project.yml dbt/finance/dbt_project.yml
-# Edit name: from 'platform_core' to your project name
-sed -i '' "s/platform_core/finance/g" dbt/finance/dbt_project.yml
-touch dbt/finance/AGENTS.md
-```
+The scaffold chooses the **style** from the function type (`notebook` for
+`pipeline`/`streaming`/`capture`, `src` for `app`/`api`/`dashboard`/`sync`) and
+writes the matching stub files. Fill every stub before committing — no TODOs in
+committed files.
 
 ## Step 3 — register everywhere
 
@@ -91,8 +95,8 @@ Three files at the root must know about the new project.
 ```diff
 [tool.uv.workspace]
 members = [
-    "projects/customer360-etl",
-+   "projects/fraud-alert-daily",
+    "projects/finance/customer360-etl",
++   "projects/fraud/alert-daily",
     ...
     "libs/common_spark",
 +   "libs/finance_common",
@@ -100,8 +104,9 @@ members = [
 ]
 ```
 
-Scala apps and dbt projects are NOT uv workspace members. They live
-under their own toolchains (`sbt`, `dbt`).
+Scala projects and **notebook-only** projects are NOT uv workspace members.
+Scala lives under `sbt`; notebook-only projects declare their lib deps in a
+minimal `pyproject.toml` only.
 
 ### 3b. `CODEOWNERS`
 
@@ -119,13 +124,15 @@ For a brand-new team, add the team-wide rule first (see
 
 ### 3c. `docs/data-architecture.md`
 
-Add a row to Table 1 (Project catalogue) and a row to Table 3 (Pipeline
-composition) showing what your project is, what it reads, what it writes.
+This file is **auto-generated** from every project's `AGENTS.md` — don't edit it
+by hand. Regenerate and commit it in the same MR:
 
-If your project introduces new cross-project reads, add a ● to Table 2 in
-the right row/column.
+```bash
+make data-map          # regenerate from AGENTS.md files
+make check-data-map    # CI runs this; it fails if the file is stale
+```
 
-Then sync the workspace:
+Then sync the uv workspace:
 
 ```bash
 make setup
@@ -144,10 +151,10 @@ The scaffolded `AGENTS.md` is a stub. Fill in:
 - **Local dev commands**
 - **Rules** specific to this project (e.g., "no floats for money")
 
-Use existing apps for reference:
-- `projects/customer360-etl/AGENTS.md` — Python DAB with dbt task
-- `projects/fraud-streaming/AGENTS.md` — Scala streaming
-- `projects/pdpa-erasure/AGENTS.md` — cross-cutting service-principal job
+Use existing projects for reference:
+- `projects/finance/customer360-etl/AGENTS.md` — Python DAB, medallion pipeline
+- `projects/fraud/streaming/AGENTS.md` — Scala streaming
+- `projects/cdo/pdpa-erasure/AGENTS.md` — cross-cutting service-principal job
 
 Length budget: ≤ 80 lines.
 
@@ -157,26 +164,30 @@ For Python apps and libs:
 - Pure transforms in `src/<package>/transforms.py` or similar
 - Unit tests in `tests/` using `pytest`
 - Use `testing_utils.spark_fixture` for Spark
-- Run: `make test P=projects/<name>` — should run green before any deploy
+- Run: `make test P=projects/<domain>/<name>` — should run green before any deploy
 
 For Scala:
 - Tests in `src/test/scala/`
 - Use ScalaTest
-- Run: `make sbt-test P=projects/<name>`
+- Run: `make sbt-test P=projects/<domain>/<name>`
 
-For dbt:
-- Every model needs `not_null` on its PK
-- `unique` on dim/fact PKs
-- `meta.pii`, `meta.classification`, `meta.sensitivity`, `meta.retention_days`
-  on EVERY column (pre-commit blocks the MR otherwise)
-- Run: `make dbt-test PROJECT=<project>`
+For output tables (every project that writes Delta):
+- Declare every output column in `contracts/schema.yml` with its `data_type`
+  and a `meta` block:
+  - `pii: true|false`
+  - `classification: Official-Open | Official-Closed | Restricted`
+  - `sensitivity: Sensitive-Normal | Sensitive-High | NA`
+  - `retention_days: <integer>`
+- Pre-commit blocks the MR if any output column is missing these. Breaking
+  changes (drop / rename / type-change) are blocked when downstream consumers
+  exist.
 
 The first MR should not contain business logic and zero tests. If you find
 yourself there, stop and write tests for the existing scaffold first.
 
-## Step 6 — configure deployment (apps only)
+## Step 6 — configure deployment
 
-Edit `projects/<name>/bundle.yml`:
+Edit `projects/<domain>/<name>/bundle.yml`:
 
 - Set the job name and schedule (or `continuous: {}` for streaming)
 - Define cluster (`job_clusters` block) using the platform-team-provided
@@ -193,9 +204,9 @@ add a `synced_database_tables` resource — see
 ## Step 7 — pre-flight check locally
 
 ```bash
-make lint P=projects/<name>             # ruff + mypy + sqlfluff + scalafmt
-make test P=projects/<name>             # pytest (or sbt-test for Scala)
-make bundle-validate P=projects/<name>  # databricks bundle validate
+make lint P=projects/<domain>/<name>             # ruff + mypy (+ scalafmt for Scala)
+make test P=projects/<domain>/<name>             # pytest (or sbt-test for Scala)
+make bundle-validate P=projects/<domain>/<name>  # databricks bundle validate
 ```
 
 All three must pass before opening an MR. If `bundle-validate` fails on a
@@ -215,7 +226,7 @@ The MR template (`/.gitlab/merge_request_templates/default.md`) asks for:
 CI runs the affected-only path:
 - `lint` job runs over your diff
 - `compute-affected` builds the JSON manifest
-- `test-python` / `test-scala` / `test-dbt` jobs fire for your scope
+- `test-python` / `test-scala` jobs fire for your scope
 - `bundle-validate` runs for your DAB
 - `security` stage (pip-audit + trivy + ruff-S) runs always
 
@@ -238,7 +249,7 @@ When the MR merges to `main`, the `deploy-dev` job runs automatically:
 Watch the deploy log. Trigger the job manually first time:
 
 ```bash
-make bundle-run P=projects/<name> JOB=<task_key> T=dev
+make bundle-run P=projects/<domain>/<name> JOB=<task_key> T=dev
 ```
 
 If the job fails, fix and re-MR. The dev environment is the sandbox.
@@ -274,17 +285,16 @@ ADRs are optional for routine new projects but required when the project:
 
 ## Checklist (the short version)
 
-- [ ] Decided the project kind (app / lib / dbt / mixed)
-- [ ] Picked a `<function>-<subdomain>-<wildcard>` name
+- [ ] Decided the function type + project style (or a library)
+- [ ] Picked a `<function>-<subdomain>` name (optional `-wildcard` suffix)
 - [ ] Confirmed owner with team lead
-- [ ] `make new-project DOMAIN=<domain> FUNCTION=pipeline NAME=NAME KIND=python|scala` OR `make new-lib NAME=NAME` OR manual dbt scaffold
-- [ ] Added to `pyproject.toml` workspace members (Python)
+- [ ] `make new-project DOMAIN=<domain> FUNCTION=<function> NAME=<name> KIND=python|scala` OR `make new-lib NAME=<name>`
+- [ ] Added to `pyproject.toml` workspace members (Python src-style + libs)
 - [ ] Added to `CODEOWNERS` (or verified existing wildcard matches)
-- [ ] Added row(s) to `docs/data-architecture.md` (Tables 1, 2, 3)
+- [ ] Regenerated `docs/data-architecture.md` with `make data-map`
 - [ ] Filled in `AGENTS.md` (≤80 lines)
-- [ ] Wrote at least one unit test (for non-dbt)
-- [ ] Every dbt column has `meta.*` fields (pre-commit will block otherwise)
-- [ ] `contracts/schema.yml` created for all output tables
+- [ ] Wrote at least one meaningful unit test (src-style projects)
+- [ ] Every output column declared in `contracts/schema.yml` with classification metadata
 - [ ] `## Runtime Dependencies` filled in AGENTS.md if project calls/reads other projects
 - [ ] `make lint` / `make test` / `make bundle-validate` all pass locally
 - [ ] Opened MR with change-ticket ID
@@ -298,27 +308,33 @@ ADRs are optional for routine new projects but required when the project:
 
 - **Scaffolded but didn't register.** The new project exists on disk but
   is invisible to CI and tooling. Fix: add to `pyproject.toml` workspace
-  members, run `make setup`.
-- **Skipped the `meta.*` block on dbt columns.** Pre-commit blocks the
-  MR. Fix: classify every column. If unsure, `@wei_hao_tan @jeffrey_siew` will
-  advise.
+  members (src-style), regenerate `docs/data-architecture.md` with
+  `make data-map`, run `make setup`.
+- **Skipped classification metadata on output columns.** Pre-commit blocks
+  the MR. Fix: declare every column in `contracts/schema.yml` with `pii`,
+  `classification`, `sensitivity`, `retention_days`. If unsure,
+  `@wei_hao_tan @jeffrey_siew` will advise.
 - **No `run_as:` for staging/prod.** The MR may pass dev deploy and then
   fail at staging/prod because there's no service principal to run the
   job. Fix: add `run_as: { service_principal_name: ${var.staging_sp} }`
   to each environment's target overrides in `bundle.yml`.
-- **Notebook has business logic.** Reviewers (and the AGENTS.md lint)
-  will flag this. Fix: extract the logic into `src/<package>/` and unit
-  test it. Notebook becomes a 4-line shim.
+- **Business logic in a `src`-style project's notebook.** For `src`-style
+  projects (`app`/`api`/`dashboard`/`sync`), notebooks are thin shims — extract
+  the logic into `src/<package>/` and unit-test it. (For `notebook`-style
+  projects — `pipeline`/`streaming`/`capture` — logic in `notebooks/` is
+  expected and first-class per ADR-0004; lint only suppresses Databricks-runtime
+  false positives, while security, bug, and real type checks still apply.)
 - **Cross-team import (Python).** Pre-commit hook
   `check_boundaries.py` blocks `from <other_team>_<app> import ...`.
   Fix: promote shared code to `libs/`, or read via Delta/Lakebase
   contract.
-- **Forgot to update `data-architecture.md`.** Sync-checker doesn't
-  enforce this yet, but quarterly review will catch it. Cleanest to add
-  the row in the same MR that adds the project.
+- **Forgot to regenerate `data-architecture.md`.** `make check-data-map`
+  fails in CI when it's stale. Fix: run `make data-map` and commit the result
+  in the same MR that adds the project.
 
 ## See also
 
+- `.claude/skills/creating-apps/` — the interactive (agent) version of this runbook
 - `migrate-a-script.md` — bringing legacy scripts in
 - `import-existing-job.md` — bringing existing Databricks Jobs in
 - `lakebase-sync-design.md` — adding a Lakebase sync

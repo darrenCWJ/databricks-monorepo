@@ -670,8 +670,8 @@ def scaffold_lib(name: str) -> None:
     root = REPO_ROOT / "libs" / pkg
     print(f"Scaffolding lib: {root.relative_to(REPO_ROOT)}")
 
-    # Package root IS the importable module (flat layout, no src/ wrapper)
-    _write(root / "__init__.py", f'"""{pkg} — shared lib."""\n')
+    # Canonical src/ layout (per ADR-0003): src/<pkg>/ is the importable package.
+    _write(root / f"src/{pkg}/__init__.py", f'"""{pkg} — shared lib."""\n')
 
     _write(
         root / "pyproject.toml",
@@ -695,7 +695,7 @@ def scaffold_lib(name: str) -> None:
         build-backend = "hatchling.build"
 
         [tool.hatch.build.targets.wheel]
-        packages = ["."]
+        packages = ["src/{pkg}"]
 
         [tool.ruff]
         line-length = 100
@@ -703,6 +703,30 @@ def scaffold_lib(name: str) -> None:
 
         [tool.pytest.ini_options]
         testpaths = ["tests"]
+        pythonpath = ["src"]
+    """),
+    )
+
+    _write(
+        root / "README.md",
+        dedent(f"""\
+        # {pkg}
+
+        TODO: one paragraph describing what this library provides.
+
+        ## Import
+
+        ```python
+        # In a project (uv workspace):
+        from {pkg}.<module> import <function>
+
+        # In a Databricks notebook (src/ layout, per ADR-0003):
+        import sys
+        sys.path.append("/Workspace/Repos/shared/mono-dev/libs/{pkg}/src")
+        from {pkg}.<module> import <function>
+        ```
+
+        See `AGENTS.md` for the full lookup table and rules.
     """),
     )
 
@@ -715,7 +739,7 @@ def scaffold_lib(name: str) -> None:
 
         **Location**: `libs/{pkg}/`
         **Import path**: `from {pkg}.<module> import <function>`
-        **Notebook setup**: `sys.path.append("/Workspace/Repos/shared/mono-dev/libs")`
+        **Notebook setup**: `sys.path.append("/Workspace/Repos/shared/mono-dev/libs/{pkg}/src")`
 
         ## Owner
         @cdo/<team>
@@ -730,14 +754,17 @@ def scaffold_lib(name: str) -> None:
 
         ```
         libs/{pkg}/
-        ├── __init__.py           <- Public API re-exports
+        ├── pyproject.toml        <- packages = ["src/{pkg}"]
         ├── AGENTS.md             <- You are here
-        ├── pyproject.toml        <- Package metadata
-        ├── (your modules here)
-        └── tests/
+        ├── README.md             <- Human-facing docs
+        ├── src/
+        │   └── {pkg}/            <- THE importable package
+        │       └── __init__.py   <- Public API re-exports
+        └── tests/                <- pytest-runnable local tests
         ```
 
         ## Rules
+        - `src/{pkg}/` holds ONLY importable modules — no notebooks/configs/tests (ADR-0003)
         - Pass `spark` explicitly as first arg (per ADR-0002)
         - Pure functions must NOT accept `spark`
         - All table paths fully qualified: `catalog.schema.table`
